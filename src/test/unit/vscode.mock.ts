@@ -5,6 +5,34 @@
  * It intercepts `require('vscode')` by hooking into Node's module resolution.
  */
 
+type Listener = (...args: any[]) => any;
+
+class MockEventEmitter {
+    private listeners: Listener[] = [];
+    readonly event = (listener: Listener) => {
+        this.listeners.push(listener);
+        return { dispose: () => { this.listeners = this.listeners.filter(l => l !== listener); } };
+    };
+    fire(data: any) {
+        for (const l of this.listeners) { l(data); }
+    }
+    dispose() { this.listeners = []; }
+}
+
+class MockFileSystemWatcher {
+    private _onDidChange = new MockEventEmitter();
+    private _onDidCreate = new MockEventEmitter();
+    private _onDidDelete = new MockEventEmitter();
+    readonly onDidChange = this._onDidChange.event;
+    readonly onDidCreate = this._onDidCreate.event;
+    readonly onDidDelete = this._onDidDelete.event;
+    dispose() {
+        this._onDidChange.dispose();
+        this._onDidCreate.dispose();
+        this._onDidDelete.dispose();
+    }
+}
+
 const vscodeMock = {
     Uri: {
         file: (p: string) => ({ fsPath: p, path: p }),
@@ -19,17 +47,26 @@ const vscodeMock = {
         Directory: 2,
         SymbolicLink: 64,
     },
+    EventEmitter: MockEventEmitter,
+    RelativePattern: class { constructor(public base: any, public pattern: string) {} },
     workspace: {
         fs: {
             readDirectory: async () => [],
             readFile: async () => Buffer.from(''),
             writeFile: async () => {},
             createDirectory: async () => {},
+            delete: async () => {},
         },
+        createFileSystemWatcher: () => new MockFileSystemWatcher(),
     },
     authentication: {
         getSession: async () => undefined,
     },
+    window: {
+        showInformationMessage: async () => undefined,
+        showWarningMessage: async () => undefined,
+    },
+    ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
 };
 
 // Hook into Module._resolveFilename to intercept 'vscode' requires
