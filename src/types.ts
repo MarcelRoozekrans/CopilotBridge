@@ -108,3 +108,8 @@ export interface MarketplaceSearchResult {
     stars: number;
     url: string;
 }
+
+export interface BulkImportResult {
+    imported: string[];
+    failed: Array<{ name: string; error: string }>;
+}

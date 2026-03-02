@@ -73,8 +73,16 @@ const vscodeMock = {
         Directory: 2,
         SymbolicLink: 64,
     },
+    ProgressLocation: {
+        SourceControl: 1,
+        Window: 10,
+        Notification: 15,
+    },
     EventEmitter: MockEventEmitter,
     RelativePattern: class { constructor(public base: any, public pattern: string) {} },
+    commands: {
+        executeCommand: async () => {},
+    },
     workspace: {
         fs: {
             readDirectory: async () => [],
@@ -84,6 +92,10 @@ const vscodeMock = {
             delete: async () => {},
         },
         createFileSystemWatcher: () => new MockFileSystemWatcher(),
+        openTextDocument: async (options: any) => ({
+            uri: { fsPath: 'untitled:mock', path: 'untitled:mock', scheme: 'untitled' },
+            getText: () => options?.content ?? '',
+        }),
     },
     authentication: {
         getSession: async () => undefined,
@@ -91,6 +103,12 @@ const vscodeMock = {
     window: {
         showInformationMessage: async () => undefined,
         showWarningMessage: async () => undefined,
+        showErrorMessage: async () => undefined,
+        withProgress: async (_options: any, task: any) => {
+            const progress = { report: () => {} };
+            const token = { isCancellationRequested: false, onCancellationRequested: () => ({ dispose: () => {} }) };
+            return task(progress, token);
+        },
     },
     ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
     TreeItem: MockTreeItem,

@@ -205,3 +205,156 @@ describe('ImportService.mergePlugins', () => {
         assert.ok(names.includes('remote-only-srv'));
     });
 });
+
+describe('ImportService.importSkill preview cleanup', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let executeCommandCalls: string[];
+    let origExecuteCommand: any;
+    let origShowInfoMessage: any;
+
+    before(() => {
+        origExecuteCommand = vscode.commands.executeCommand;
+        origShowInfoMessage = vscode.window.showInformationMessage;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        executeCommandCalls = [];
+        vscode.commands.executeCommand = async (cmd: string) => {
+            executeCommandCalls.push(cmd);
+        };
+    });
+
+    afterEach(() => {
+        vscode.commands.executeCommand = origExecuteCommand;
+        vscode.window.showInformationMessage = origShowInfoMessage;
+    });
+
+    it('should close diff editor when user accepts', async () => {
+        vscode.window.showInformationMessage = async () => 'Accept';
+        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
+        assert.ok(executeCommandCalls.includes('vscode.diff'), 'should open diff');
+        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff');
+    });
+
+    it('should close diff editor when user cancels', async () => {
+        vscode.window.showInformationMessage = async () => 'Cancel';
+        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
+        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff on cancel');
+    });
+
+    it('should close diff editor when user dismisses dialog', async () => {
+        vscode.window.showInformationMessage = async () => undefined;
+        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
+        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff on dismiss');
+    });
+});
+
+describe('ImportService.importAllSkills', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let origShowInfoMessage: any;
+    let origShowWarningMessage: any;
+    let origWithProgress: any;
+
+    before(() => {
+        origShowInfoMessage = vscode.window.showInformationMessage;
+        origShowWarningMessage = vscode.window.showWarningMessage;
+        origWithProgress = vscode.window.withProgress;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+    });
+
+    afterEach(() => {
+        vscode.window.showInformationMessage = origShowInfoMessage;
+        vscode.window.showWarningMessage = origShowWarningMessage;
+        vscode.window.withProgress = origWithProgress;
+    });
+
+    it('should return empty result for empty skills array', async () => {
+        const result = await service.importAllSkills([], ['instructions'], false);
+        assert.strictEqual(result.imported.length, 0);
+        assert.strictEqual(result.failed.length, 0);
+    });
+
+    it('should not proceed when user cancels confirmation', async () => {
+        vscode.window.showInformationMessage = async () => 'Cancel';
+        const result = await service.importAllSkills([makeSkill()], ['instructions'], false);
+        assert.strictEqual(result.imported.length, 0);
+    });
+
+    it('should not proceed when user dismisses confirmation', async () => {
+        vscode.window.showInformationMessage = async () => undefined;
+        const result = await service.importAllSkills([makeSkill()], ['instructions'], false);
+        assert.strictEqual(result.imported.length, 0);
+    });
+
+    it('should import all skills when user confirms', async () => {
+        let callCount = 0;
+        vscode.window.showInformationMessage = async () => {
+            callCount++;
+            if (callCount === 1) { return 'Import All'; }
+            return undefined;
+        };
+
+        const skills = [makeSkill({ name: 'skill-a' }), makeSkill({ name: 'skill-b' })];
+        const result = await service.importAllSkills(skills, ['instructions'], false);
+
+        assert.strictEqual(result.imported.length, 2);
+        assert.ok(result.imported.includes('skill-a'));
+        assert.ok(result.imported.includes('skill-b'));
+        assert.strictEqual(result.failed.length, 0);
+    });
+
+    it('should report progress for each skill', async () => {
+        vscode.window.showInformationMessage = async () => 'Import All';
+
+        const progressMessages: string[] = [];
+        vscode.window.withProgress = async (_opts: any, task: any) => {
+            const progress = {
+                report: (value: { message?: string }) => {
+                    if (value.message) { progressMessages.push(value.message); }
+                },
+            };
+            const token = { isCancellationRequested: false, onCancellationRequested: () => ({ dispose: () => {} }) };
+            return task(progress, token);
+        };
+
+        const skills = [makeSkill({ name: 'skill-x' }), makeSkill({ name: 'skill-y' })];
+        await service.importAllSkills(skills, ['instructions'], false);
+
+        assert.ok(progressMessages.some(m => m.includes('skill-x')));
+        assert.ok(progressMessages.some(m => m.includes('skill-y')));
+    });
+
+    it('should respect cancellation token', async () => {
+        vscode.window.showInformationMessage = async () => 'Import All';
+        vscode.window.withProgress = async (_opts: any, task: any) => {
+            const progress = { report: () => {} };
+            const token = { isCancellationRequested: true, onCancellationRequested: () => ({ dispose: () => {} }) };
+            return task(progress, token);
+        };
+
+        const result = await service.importAllSkills([makeSkill({ name: 'should-skip' })], ['instructions'], false);
+        assert.strictEqual(result.imported.length, 0);
+    });
+
+    it('should show truncated summary for many skills', async () => {
+        let confirmationMsg = '';
+        vscode.window.showInformationMessage = async (msg: string) => {
+            confirmationMsg = msg;
+            return 'Cancel';
+        };
+
+        const skills = Array.from({ length: 10 }, (_, i) => makeSkill({ name: `skill-${i}` }));
+        await service.importAllSkills(skills, ['instructions'], false);
+
+        assert.ok(confirmationMsg.includes('10 skill(s)'));
+        assert.ok(confirmationMsg.includes('and 7 more'));
+    });
+});

@@ -173,7 +173,12 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('copilotSkillBridge.importSkill', async (item?: SkillTreeItem) => {
             if (item?.skillInfo) {
                 const { outputFormats, generateRegistry } = getConfig();
-                await importService.importSkill(item.skillInfo, outputFormats, generateRegistry);
+                try {
+                    await importService.importSkill(item.skillInfo, outputFormats, generateRegistry);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Import failed for "${item.skillInfo.name}": ${msg}`);
+                }
                 await refreshAll();
             } else {
                 vscode.window.showWarningMessage('Select a skill from the Copilot Skill Bridge sidebar.');
@@ -187,11 +192,16 @@ export async function activate(context: vscode.ExtensionContext) {
                 return;
             }
             const { outputFormats, generateRegistry } = getConfig();
-            for (const skill of plugin.skills) {
-                await importService.importSkill(skill, outputFormats, generateRegistry);
-            }
-            if (plugin.mcpServers?.length) {
-                await importService.importAllMcpServers(plugin.mcpServers);
+            try {
+                await importService.importAllSkills(
+                    plugin.skills,
+                    outputFormats,
+                    generateRegistry,
+                    plugin.mcpServers
+                );
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Import All failed: ${msg}`);
             }
             await refreshAll();
         }),
@@ -204,23 +214,38 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('copilotSkillBridge.removeSkill', async (item?: SkillTreeItem) => {
             if (item?.skillInfo) {
                 const { generateRegistry } = getConfig();
-                await importService.removeSkill(item.skillInfo.name, generateRegistry);
+                try {
+                    await importService.removeSkill(item.skillInfo.name, generateRegistry);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Remove failed for "${item.skillInfo.name}": ${msg}`);
+                }
                 await refreshAll();
             }
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.rebuildRegistry', async () => {
-            const manifest = await loadManifest(workspaceUri);
-            const entries = Object.keys(manifest.skills).map(name => {
-                return generateRegistryEntry(name, '');
-            });
-            await updateCopilotInstructions(workspaceUri, entries);
-            vscode.window.showInformationMessage('Skill registry rebuilt.');
+            try {
+                const manifest = await loadManifest(workspaceUri);
+                const entries = Object.keys(manifest.skills).map(name => {
+                    return generateRegistryEntry(name, '');
+                });
+                await updateCopilotInstructions(workspaceUri, entries);
+                vscode.window.showInformationMessage('Skill registry rebuilt.');
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Rebuild registry failed: ${msg}`);
+            }
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.importMcpServer', async (item?: SkillTreeItem) => {
             if (item?.mcpServerInfo) {
-                await importService.importMcpServer(item.mcpServerInfo);
+                try {
+                    await importService.importMcpServer(item.mcpServerInfo);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Import MCP server failed: ${msg}`);
+                }
                 await refreshAll();
             } else {
                 vscode.window.showWarningMessage('Select an MCP server from the Copilot Skill Bridge sidebar.');
@@ -233,13 +258,23 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('No MCP servers found for this plugin.');
                 return;
             }
-            await importService.importAllMcpServers(plugin.mcpServers);
+            try {
+                await importService.importAllMcpServers(plugin.mcpServers);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Import MCP servers failed: ${msg}`);
+            }
             await refreshAll();
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.removeMcpServer', async (item?: SkillTreeItem) => {
             if (item?.mcpServerInfo) {
-                await importService.removeMcpServer(item.mcpServerInfo.name);
+                try {
+                    await importService.removeMcpServer(item.mcpServerInfo.name);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Remove MCP server failed: ${msg}`);
+                }
                 await refreshAll();
             }
         }),

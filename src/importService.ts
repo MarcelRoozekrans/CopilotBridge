@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo } from './types';
+import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult } from './types';
 import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateRegistryEntry } from './converter';
 import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported } from './stateManager';
@@ -81,14 +81,110 @@ export class ImportService {
 
     async importSkill(skill: SkillInfo, outputFormats: string[], generateRegistry: boolean): Promise<void> {
         const conversion = this.convertSkill(skill);
-        const hash = computeHash(skill.content);
-        const source = `${skill.pluginName}@${skill.marketplace}`;
 
-        // Show diff preview
         const accepted = await this.showPreview(skill, conversion);
         if (!accepted) { return; }
 
-        // Write files
+        await this.writeSkillFiles(skill, conversion, outputFormats, generateRegistry);
+        vscode.window.showInformationMessage(`Imported skill: ${skill.name}`);
+    }
+
+    async importAllSkills(
+        skills: SkillInfo[],
+        outputFormats: string[],
+        generateRegistry: boolean,
+        mcpServers?: McpServerInfo[]
+    ): Promise<BulkImportResult> {
+        const result: BulkImportResult = { imported: [], failed: [] };
+        if (skills.length === 0 && (!mcpServers || mcpServers.length === 0)) {
+            return result;
+        }
+
+        const conversions = skills.map(skill => ({
+            skill,
+            conversion: this.convertSkill(skill),
+        }));
+
+        const skillNames = skills.map(s => s.name);
+        const summary = skills.length <= 5
+            ? skillNames.join(', ')
+            : `${skillNames.slice(0, 3).join(', ')} and ${skills.length - 3} more`;
+
+        const choice = await vscode.window.showInformationMessage(
+            `Import ${skills.length} skill(s): ${summary}?`,
+            { modal: true },
+            'Import All',
+            'Cancel'
+        );
+
+        if (choice !== 'Import All') {
+            return result;
+        }
+
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Importing skills',
+                cancellable: true,
+            },
+            async (progress, token) => {
+                const total = skills.length + (mcpServers?.length ?? 0);
+                const increment = total > 0 ? 100 / total : 100;
+
+                for (const { skill, conversion } of conversions) {
+                    if (token.isCancellationRequested) { break; }
+                    progress.report({ message: `${skill.name}...`, increment });
+
+                    try {
+                        await this.writeSkillFiles(skill, conversion, outputFormats, generateRegistry);
+                        result.imported.push(skill.name);
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        result.failed.push({ name: skill.name, error: msg });
+                    }
+                }
+
+                if (mcpServers?.length && !token.isCancellationRequested) {
+                    for (const server of mcpServers) {
+                        if (token.isCancellationRequested) { break; }
+                        progress.report({ message: `MCP: ${server.name}...`, increment });
+
+                        try {
+                            const manifest = await loadManifest(this.workspaceUri);
+                            if (!isMcpServerImported(manifest, server.name)) {
+                                await this.importMcpServer(server);
+                            }
+                        } catch (err) {
+                            const msg = err instanceof Error ? err.message : String(err);
+                            result.failed.push({ name: `MCP:${server.name}`, error: msg });
+                        }
+                    }
+                }
+            }
+        );
+
+        if (result.failed.length === 0) {
+            vscode.window.showInformationMessage(
+                `Successfully imported ${result.imported.length} skill(s).`
+            );
+        } else {
+            vscode.window.showWarningMessage(
+                `Imported ${result.imported.length}, ${result.failed.length} failed: ${result.failed.map(f => f.name).join(', ')}`
+            );
+        }
+
+        return result;
+    }
+
+    private async writeSkillFiles(
+        skill: SkillInfo,
+        conversion: ConversionResult,
+        outputFormats: string[],
+        generateRegistry: boolean
+    ): Promise<void> {
+        const hash = computeHash(skill.content);
+        const source = `${skill.pluginName}@${skill.marketplace}`;
+
         if (outputFormats.includes('instructions')) {
             await writeInstructionsFile(this.workspaceUri, skill.name, conversion.instructionsContent);
         }
@@ -96,12 +192,10 @@ export class ImportService {
             await writePromptFile(this.workspaceUri, skill.name, conversion.promptContent);
         }
 
-        // Update manifest
         let manifest = await loadManifest(this.workspaceUri);
         manifest = recordImport(manifest, skill.name, source, hash);
         await saveManifest(this.workspaceUri, manifest);
 
-        // Update registry
         if (generateRegistry) {
             const entries = Object.keys(manifest.skills).map(name => {
                 const skillData = this.findSkillByName(name);
@@ -109,8 +203,6 @@ export class ImportService {
             });
             await updateCopilotInstructions(this.workspaceUri, entries);
         }
-
-        vscode.window.showInformationMessage(`Imported skill: ${skill.name}`);
     }
 
     async removeSkill(skillName: string, generateRegistry: boolean): Promise<void> {
@@ -152,6 +244,13 @@ export class ImportService {
             'Accept',
             'Cancel'
         );
+
+        // Close the diff tab regardless of outcome
+        try {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        } catch {
+            // Best-effort: editor may already be closed
+        }
 
         return choice === 'Accept';
     }
