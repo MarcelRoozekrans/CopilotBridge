@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.1...copilot-skill-bridge-v0.4.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* support alternate marketplace.json formats ([#13](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/13)) ([3dc5ea5](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/3dc5ea5b4336a1f477c295d2e2391f8e7b333f6d))
+
 ## [0.4.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.0...copilot-skill-bridge-v0.4.1) (2026-03-02)
 
 
