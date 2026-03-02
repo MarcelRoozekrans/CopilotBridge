@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.0...copilot-skill-bridge-v0.2.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* add MCP server discovery to remote marketplace reader ([537c2d5](https://github.com/MarcelRoozekrans/CopilotBridge/commit/537c2d57f68f9a31943a7b988e6df2acda99521e))
+* **ci:** add publish job to release-please workflow ([a663f8a](https://github.com/MarcelRoozekrans/CopilotBridge/commit/a663f8a625a3c48751191493eedfc14e795c9866))
+
 ## [0.2.0](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.1.0...copilot-skill-bridge-v0.2.0) (2026-03-02)
 
 
