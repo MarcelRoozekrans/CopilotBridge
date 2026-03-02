@@ -245,3 +245,50 @@ describe('Remote MCP discovery integration', () => {
         assert.strictEqual(serverNodes[0].contextValue, 'mcpServer-synced');
     });
 });
+
+describe('Marketplace search integration', () => {
+    it('should build search URL without query', () => {
+        const { buildSearchUrl } = require('../../marketplaceSearch');
+        const url = buildSearchUrl();
+        assert.ok(url.startsWith('https://api.github.com/search/code'));
+        assert.ok(url.includes('marketplace.json'));
+        assert.ok(url.includes('.claude-plugin'));
+    });
+
+    it('should parse and deduplicate search results sorted by stars', () => {
+        const { parseSearchResults } = require('../../marketplaceSearch');
+        const response = {
+            total_count: 4,
+            items: [
+                { repository: { full_name: 'low/repo', description: 'Low stars', stargazers_count: 2, html_url: 'https://github.com/low/repo' } },
+                { repository: { full_name: 'high/repo', description: 'High stars', stargazers_count: 999, html_url: 'https://github.com/high/repo' } },
+                { repository: { full_name: 'high/repo', description: 'Duplicate', stargazers_count: 999, html_url: 'https://github.com/high/repo' } },
+                { repository: { full_name: 'mid/repo', description: null, stargazers_count: 50, html_url: 'https://github.com/mid/repo' } },
+            ],
+        };
+        const results = parseSearchResults(response);
+        assert.strictEqual(results.length, 3); // deduplicated
+        assert.strictEqual(results[0].repo, 'high/repo'); // sorted by stars desc
+        assert.strictEqual(results[0].stars, 999);
+        assert.strictEqual(results[1].repo, 'mid/repo');
+        assert.strictEqual(results[2].repo, 'low/repo');
+        assert.strictEqual(results[2].description, 'Low stars');
+        assert.strictEqual(results[1].description, ''); // null → ''
+    });
+
+    it('should filter already-added marketplaces from results', () => {
+        const { parseSearchResults } = require('../../marketplaceSearch');
+        const response = {
+            total_count: 2,
+            items: [
+                { repository: { full_name: 'obra/superpowers', description: 'Superpowers', stargazers_count: 100, html_url: 'https://github.com/obra/superpowers' } },
+                { repository: { full_name: 'new/repo', description: 'New', stargazers_count: 50, html_url: 'https://github.com/new/repo' } },
+            ],
+        };
+        const results = parseSearchResults(response);
+        const alreadyAdded = ['obra/superpowers'];
+        const filtered = results.filter((r: any) => !alreadyAdded.includes(r.repo));
+        assert.strictEqual(filtered.length, 1);
+        assert.strictEqual(filtered[0].repo, 'new/repo');
+    });
+});
