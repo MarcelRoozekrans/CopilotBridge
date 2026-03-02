@@ -50,6 +50,16 @@ async function fetchFileContent(repo: string, path: string): Promise<string> {
     return parseGitHubContentsResponse(data);
 }
 
+export function normalizeMarketplaceJson(raw: MarketplaceJson): Array<{ name: string; description: string; version: string; source: string }> {
+    const plugins = raw.plugins ?? raw.marketplace?.plugins ?? [];
+    return plugins.map(p => ({
+        name: p.name,
+        description: p.description,
+        version: p.version,
+        source: p.source ?? p.path ?? './',
+    }));
+}
+
 export async function discoverRemotePlugins(repo: string): Promise<PluginInfo[]> {
     const plugins: PluginInfo[] = [];
 
@@ -58,7 +68,7 @@ export async function discoverRemotePlugins(repo: string): Promise<PluginInfo[]>
     try {
         const marketplaceContent = await fetchFileContent(repo, '.claude-plugin/marketplace.json');
         const marketplace: MarketplaceJson = JSON.parse(marketplaceContent);
-        pluginEntries = marketplace.plugins;
+        pluginEntries = normalizeMarketplaceJson(marketplace);
     } catch {
         try {
             const pluginContent = await fetchFileContent(repo, '.claude-plugin/plugin.json');

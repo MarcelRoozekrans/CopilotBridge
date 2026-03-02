@@ -89,17 +89,26 @@ export interface PluginJson {
     hooks?: string;
 }
 
-export interface MarketplaceJson {
+export interface MarketplacePluginEntry {
     name: string;
     description: string;
+    version: string;
+    source?: string;
+    path?: string;
+    author?: { name: string; email?: string };
+}
+
+export interface MarketplaceJson {
+    name?: string;
+    description?: string;
     owner?: { name: string; email?: string };
-    plugins: Array<{
-        name: string;
-        description: string;
-        version: string;
-        source: string;
-        author?: { name: string; email?: string };
-    }>;
+    plugins?: MarketplacePluginEntry[];
+    // Some repos nest under a "marketplace" key
+    marketplace?: {
+        name?: string;
+        description?: string;
+        plugins?: MarketplacePluginEntry[];
+    };
 }
 
 export interface MarketplaceSearchResult {
