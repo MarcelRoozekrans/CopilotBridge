@@ -11,7 +11,7 @@ export function buildSearchUrl(query?: string): string {
     return `${SEARCH_BASE}?q=${encodeURIComponent(q)}&per_page=30`;
 }
 
-interface GitHubCodeSearchResponse {
+export interface GitHubCodeSearchResponse {
     total_count: number;
     items: Array<{
         repository: {

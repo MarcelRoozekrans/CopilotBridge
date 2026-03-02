@@ -1,6 +1,5 @@
 import * as assert from 'assert';
-import { MarketplaceSearchResult } from '../../types';
-import { buildSearchUrl, parseSearchResults } from '../../marketplaceSearch';
+import { buildSearchUrl, parseSearchResults, GitHubCodeSearchResponse } from '../../marketplaceSearch';
 
 describe('buildSearchUrl', () => {
     it('should build code search URL with file signature', () => {
@@ -24,7 +23,7 @@ describe('buildSearchUrl', () => {
 
 describe('parseSearchResults', () => {
     it('should extract repo info from GitHub code search response', () => {
-        const response = {
+        const response: GitHubCodeSearchResponse = {
             total_count: 2,
             items: [
                 {
@@ -53,7 +52,7 @@ describe('parseSearchResults', () => {
     });
 
     it('should sort by stars descending', () => {
-        const response = {
+        const response: GitHubCodeSearchResponse = {
             total_count: 2,
             items: [
                 {
@@ -81,7 +80,7 @@ describe('parseSearchResults', () => {
     });
 
     it('should deduplicate by repo name', () => {
-        const response = {
+        const response: GitHubCodeSearchResponse = {
             total_count: 3,
             items: [
                 {
@@ -115,13 +114,13 @@ describe('parseSearchResults', () => {
     });
 
     it('should handle empty response', () => {
-        const response = { total_count: 0, items: [] };
+        const response: GitHubCodeSearchResponse = { total_count: 0, items: [] };
         const results = parseSearchResults(response);
         assert.strictEqual(results.length, 0);
     });
 
     it('should handle null description gracefully', () => {
-        const response = {
+        const response: GitHubCodeSearchResponse = {
             total_count: 1,
             items: [
                 {
