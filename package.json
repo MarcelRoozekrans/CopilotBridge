@@ -3,9 +3,26 @@
   "displayName": "Copilot Skill Bridge",
   "description": "Bridge Claude Code marketplace skills into GitHub Copilot",
   "version": "0.1.0",
-  "publisher": "copilot-skill-bridge",
+  "publisher": "MarcelRoozekrans",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MarcelRoozekrans/CopilotBridge"
+  },
+  "icon": "media/icon.png",
+  "keywords": [
+    "copilot",
+    "claude",
+    "skills",
+    "bridge",
+    "ai"
+  ],
+  "homepage": "https://github.com/MarcelRoozekrans/CopilotBridge#readme",
+  "bugs": {
+    "url": "https://github.com/MarcelRoozekrans/CopilotBridge/issues"
+  },
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.109.0"
   },
   "categories": [
     "Other"
@@ -159,7 +176,9 @@
     "test:unit": "mocha out/test/unit/**/*.test.js",
     "test:integration": "node out/test/integration/runTests.js",
     "test": "npm run test:unit && npm run test:integration",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
@@ -167,6 +186,7 @@
     "@types/node": "^25.3.3",
     "@types/vscode": "^1.109.0",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "esbuild": "^0.27.3",
     "glob": "^13.0.6",
     "mocha": "^11.7.5",

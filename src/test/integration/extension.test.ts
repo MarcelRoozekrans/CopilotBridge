@@ -3,12 +3,12 @@ import * as vscode from 'vscode';
 
 describe('Extension Lifecycle', () => {
     it('should be present in installed extensions', () => {
-        const ext = vscode.extensions.getExtension('copilot-skill-bridge.copilot-skill-bridge');
+        const ext = vscode.extensions.getExtension('MarcelRoozekrans.copilot-skill-bridge');
         assert.ok(ext, 'Extension not found');
     });
 
     it('should activate successfully', async () => {
-        const ext = vscode.extensions.getExtension('copilot-skill-bridge.copilot-skill-bridge');
+        const ext = vscode.extensions.getExtension('MarcelRoozekrans.copilot-skill-bridge');
         assert.ok(ext);
         await ext.activate();
         assert.strictEqual(ext.isActive, true);
