@@ -27,7 +27,10 @@ export class ImportService {
             }
         }
 
-        // Merge: if a plugin exists both locally and remotely, mark source as 'both'
+        return this.mergePluginLists(localPlugins, remotePlugins);
+    }
+
+    mergePluginLists(localPlugins: PluginInfo[], remotePlugins: PluginInfo[]): PluginInfo[] {
         const merged = new Map<string, PluginInfo>();
 
         for (const p of localPlugins) {
@@ -38,11 +41,23 @@ export class ImportService {
             const existing = merged.get(p.name);
             if (existing) {
                 existing.source = 'both';
+                // Merge skills
                 const existingNames = new Set(existing.skills.map(s => s.name));
                 for (const skill of p.skills) {
                     if (!existingNames.has(skill.name)) {
                         existing.skills.push(skill);
                     }
+                }
+                // Merge MCP servers
+                if (p.mcpServers?.length) {
+                    const existingMcpNames = new Set((existing.mcpServers ?? []).map(s => s.name));
+                    const mergedMcp = [...(existing.mcpServers ?? [])];
+                    for (const server of p.mcpServers) {
+                        if (!existingMcpNames.has(server.name)) {
+                            mergedMcp.push(server);
+                        }
+                    }
+                    existing.mcpServers = mergedMcp;
                 }
             } else {
                 merged.set(p.name, p);

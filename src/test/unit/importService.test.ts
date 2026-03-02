@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ImportService } from '../../importService';
-import { SkillInfo, McpServerInfo } from '../../types';
+import { SkillInfo, McpServerInfo, PluginInfo } from '../../types';
 
 function makeSkill(overrides: Partial<SkillInfo> = {}): SkillInfo {
     return {
@@ -93,5 +93,115 @@ describe('ImportService MCP methods', () => {
 
     it('should have removeMcpServer method', () => {
         assert.strictEqual(typeof service.removeMcpServer, 'function');
+    });
+});
+
+describe('ImportService.mergePlugins', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+
+    before(() => {
+        service = new ImportService(workspaceUri);
+    });
+
+    function makeMcpServer(name: string): McpServerInfo {
+        return { name, config: { command: 'npx', args: ['-y', name] }, pluginName: 'test', pluginVersion: '1.0.0', marketplace: 'test' };
+    }
+
+    it('should preserve mcpServers from remote when plugin exists only remotely', () => {
+        const remotePlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [],
+            mcpServers: [makeMcpServer('longterm-memory')],
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        // mergePlugins is called internally by discoverAllPlugins;
+        // test the merge logic directly
+        const merged = service.mergePluginLists([], [remotePlugin]);
+        assert.strictEqual(merged.length, 1);
+        assert.strictEqual(merged[0].mcpServers?.length, 1);
+        assert.strictEqual(merged[0].mcpServers![0].name, 'longterm-memory');
+    });
+
+    it('should merge mcpServers from remote into local plugin', () => {
+        const localPlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [makeSkill({ name: 'long-term-memory', pluginName: 'longterm-memory' })],
+            marketplace: 'local-cache',
+            source: 'local',
+        };
+        const remotePlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [makeSkill({ name: 'long-term-memory', pluginName: 'longterm-memory', source: 'remote' })],
+            mcpServers: [makeMcpServer('longterm-memory')],
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        const merged = service.mergePluginLists([localPlugin], [remotePlugin]);
+        assert.strictEqual(merged.length, 1);
+        assert.strictEqual(merged[0].source, 'both');
+        assert.ok(merged[0].mcpServers, 'Merged plugin should have mcpServers');
+        assert.strictEqual(merged[0].mcpServers!.length, 1);
+        assert.strictEqual(merged[0].mcpServers![0].name, 'longterm-memory');
+    });
+
+    it('should keep local mcpServers when remote has none', () => {
+        const localPlugin: PluginInfo = {
+            name: 'test-plugin',
+            description: 'test',
+            version: '1.0.0',
+            skills: [],
+            mcpServers: [makeMcpServer('local-srv')],
+            marketplace: 'local',
+            source: 'local',
+        };
+        const remotePlugin: PluginInfo = {
+            name: 'test-plugin',
+            description: 'test',
+            version: '1.0.0',
+            skills: [],
+            marketplace: 'remote',
+            source: 'remote',
+        };
+
+        const merged = service.mergePluginLists([localPlugin], [remotePlugin]);
+        assert.strictEqual(merged[0].mcpServers?.length, 1);
+        assert.strictEqual(merged[0].mcpServers![0].name, 'local-srv');
+    });
+
+    it('should merge mcpServers from both local and remote without duplicates', () => {
+        const localPlugin: PluginInfo = {
+            name: 'test-plugin',
+            description: 'test',
+            version: '1.0.0',
+            skills: [],
+            mcpServers: [makeMcpServer('shared-srv')],
+            marketplace: 'local',
+            source: 'local',
+        };
+        const remotePlugin: PluginInfo = {
+            name: 'test-plugin',
+            description: 'test',
+            version: '1.0.0',
+            skills: [],
+            mcpServers: [makeMcpServer('shared-srv'), makeMcpServer('remote-only-srv')],
+            marketplace: 'remote',
+            source: 'remote',
+        };
+
+        const merged = service.mergePluginLists([localPlugin], [remotePlugin]);
+        assert.strictEqual(merged[0].mcpServers?.length, 2);
+        const names = merged[0].mcpServers!.map(s => s.name);
+        assert.ok(names.includes('shared-srv'));
+        assert.ok(names.includes('remote-only-srv'));
     });
 });
