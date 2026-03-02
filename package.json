@@ -32,7 +32,8 @@
       { "command": "copilotSkillBridge.checkForUpdates", "title": "Check for Updates", "icon": "$(refresh)" },
       { "command": "copilotSkillBridge.addMarketplace", "title": "Add Marketplace", "icon": "$(add)" },
       { "command": "copilotSkillBridge.removeSkill", "title": "Remove Skill", "icon": "$(trash)" },
-      { "command": "copilotSkillBridge.rebuildRegistry", "title": "Rebuild Registry" }
+      { "command": "copilotSkillBridge.rebuildRegistry", "title": "Rebuild Registry" },
+      { "command": "copilotSkillBridge.login", "title": "Sign in to GitHub", "icon": "$(github)" }
     ],
     "menus": {
       "view/item/context": [
@@ -59,6 +60,10 @@
         },
         {
           "command": "copilotSkillBridge.addMarketplace",
+          "when": "view == skillBridgeExplorer"
+        },
+        {
+          "command": "copilotSkillBridge.login",
           "when": "view == skillBridgeExplorer"
         }
       ]

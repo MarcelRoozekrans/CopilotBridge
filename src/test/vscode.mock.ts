@@ -27,6 +27,9 @@ const vscodeMock = {
             createDirectory: async () => {},
         },
     },
+    authentication: {
+        getSession: async () => undefined,
+    },
 };
 
 // Hook into Module._resolveFilename to intercept 'vscode' requires

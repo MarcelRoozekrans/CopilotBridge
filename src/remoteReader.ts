@@ -1,5 +1,6 @@
 import { SkillInfo, PluginInfo, PluginJson, MarketplaceJson } from './types';
 import { parseSkillFrontmatter } from './parser';
+import { buildAuthHeaders, getGitHubToken } from './auth';
 
 export function buildGitHubApiUrl(repo: string, path: string, ref?: string): string {
     const base = `https://api.github.com/repos/${repo}/contents/${path}`;
@@ -33,12 +34,9 @@ export function buildRemoteSkillInfo(
 }
 
 async function fetchJson(url: string): Promise<any> {
-    const response = await fetch(url, {
-        headers: {
-            'Accept': 'application/vnd.github.v3+json',
-            'User-Agent': 'copilot-skill-bridge',
-        },
-    });
+    const token = await getGitHubToken();
+    const headers = buildAuthHeaders(token);
+    const response = await fetch(url, { headers });
     if (!response.ok) {
         throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
     }

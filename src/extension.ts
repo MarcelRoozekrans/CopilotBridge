@@ -103,6 +103,17 @@ export async function activate(context: vscode.ExtensionContext) {
             await updateCopilotInstructions(workspaceUri, entries);
             vscode.window.showInformationMessage('Skill registry rebuilt.');
         }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.login', async () => {
+            const { loginToGitHub } = await import('./auth');
+            const token = await loginToGitHub();
+            if (token) {
+                vscode.window.showInformationMessage('Signed in to GitHub successfully.');
+                await refreshAll();
+            } else {
+                vscode.window.showWarningMessage('GitHub sign-in was cancelled or failed.');
+            }
+        }),
     );
 
     // Start update watcher
