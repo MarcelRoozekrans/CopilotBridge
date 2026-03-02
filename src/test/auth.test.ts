@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { buildAuthHeaders } from '../auth';
+import { buildAuthHeaders, getGitHubToken } from '../auth';
 
 describe('buildAuthHeaders', () => {
     it('should return base headers when no token provided', () => {
@@ -13,5 +13,12 @@ describe('buildAuthHeaders', () => {
         const headers = buildAuthHeaders('ghp_test123');
         assert.strictEqual(headers['Authorization'], 'Bearer ghp_test123');
         assert.strictEqual(headers['User-Agent'], 'copilot-skill-bridge');
+    });
+});
+
+describe('getGitHubToken', () => {
+    it('should return undefined when no session exists', async () => {
+        const token = await getGitHubToken();
+        assert.strictEqual(token, undefined);
     });
 });
