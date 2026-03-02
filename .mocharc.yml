@@ -1,2 +1,2 @@
 require:
-  - out/test/vscode-mock.js
+  - out/test/vscode.mock.js
