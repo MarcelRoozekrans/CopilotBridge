@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, ConversionResult } from './types';
+import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo } from './types';
 import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateRegistryEntry } from './converter';
 import { parseSkillFrontmatter } from './parser';
-import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord } from './stateManager';
+import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles } from './fileWriter';
 import { discoverLocalPlugins } from './localReader';
 import { discoverRemotePlugins } from './remoteReader';
+import { convertMcpServers } from './mcpConverter';
+import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
 
 export class ImportService {
     private allPlugins: PluginInfo[] = [];
@@ -141,6 +143,49 @@ export class ImportService {
 
     setPlugins(plugins: PluginInfo[]) {
         this.allPlugins = plugins;
+    }
+
+    async importMcpServer(server: McpServerInfo): Promise<void> {
+        const converted = convertMcpServers([server]);
+
+        const existing = await readMcpJson(this.workspaceUri);
+
+        let manifest = await loadManifest(this.workspaceUri);
+        const managedNames = Object.keys(manifest.mcpServers ?? {});
+
+        const merged = mergeMcpConfigs(existing, converted, managedNames);
+        await writeMcpJson(this.workspaceUri, merged);
+
+        const source = `${server.pluginName}@${server.marketplace}`;
+        manifest = recordMcpImport(manifest, server.name, source);
+        await saveManifest(this.workspaceUri, manifest);
+
+        vscode.window.showInformationMessage(`Imported MCP server: ${server.name}`);
+    }
+
+    async importAllMcpServers(servers: McpServerInfo[]): Promise<void> {
+        for (const server of servers) {
+            const manifest = await loadManifest(this.workspaceUri);
+            if (!isMcpServerImported(manifest, server.name)) {
+                await this.importMcpServer(server);
+            }
+        }
+    }
+
+    async removeMcpServer(serverName: string): Promise<void> {
+        let manifest = await loadManifest(this.workspaceUri);
+        if (!isMcpServerImported(manifest, serverName)) {
+            return;
+        }
+
+        const existing = await readMcpJson(this.workspaceUri);
+        const updated = removeServerFromConfig(existing, serverName);
+        await writeMcpJson(this.workspaceUri, updated);
+
+        manifest = removeMcpRecord(manifest, serverName);
+        await saveManifest(this.workspaceUri, manifest);
+
+        vscode.window.showInformationMessage(`Removed MCP server: ${serverName}`);
     }
 
     private findSkillByName(name: string): SkillInfo | undefined {

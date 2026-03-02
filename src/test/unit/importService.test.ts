@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ImportService } from '../../importService';
-import { SkillInfo } from '../../types';
+import { SkillInfo, McpServerInfo } from '../../types';
 
 function makeSkill(overrides: Partial<SkillInfo> = {}): SkillInfo {
     return {
@@ -72,5 +72,26 @@ describe('ImportService.convertSkill', () => {
         const result = service.convertSkill(skill);
         assert.ok(!result.instructionsContent.includes('Agent tool'));
         assert.ok(result.instructionsContent.includes('break into subtasks'));
+    });
+});
+
+describe('ImportService MCP methods', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+
+    before(() => {
+        service = new ImportService(workspaceUri);
+    });
+
+    it('should have importMcpServer method', () => {
+        assert.strictEqual(typeof service.importMcpServer, 'function');
+    });
+
+    it('should have importAllMcpServers method', () => {
+        assert.strictEqual(typeof service.importAllMcpServers, 'function');
+    });
+
+    it('should have removeMcpServer method', () => {
+        assert.strictEqual(typeof service.removeMcpServer, 'function');
     });
 });
