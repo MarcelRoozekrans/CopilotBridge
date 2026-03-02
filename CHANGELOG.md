@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.1...copilot-skill-bridge-v0.2.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* merge MCP servers from remote plugins during discovery ([#3](https://github.com/MarcelRoozekrans/CopilotBridge/issues/3)) ([534fb0a](https://github.com/MarcelRoozekrans/CopilotBridge/commit/534fb0a1999a6186d5868378816b81fada81502d))
+
 ## [0.2.1](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.0...copilot-skill-bridge-v0.2.1) (2026-03-02)
 
 
