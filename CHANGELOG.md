@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.3.0...copilot-skill-bridge-v0.4.0) (2026-03-02)
+
+
+### Features
+
+* improve skill import UX with diff cleanup and batch import ([#9](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/9)) ([3a21a8e](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/3a21a8e2be53b5b36cb7e61eab5605165bfa6945))
+
 ## [0.3.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.2.3...copilot-skill-bridge-v0.3.0) (2026-03-02)
 
 
