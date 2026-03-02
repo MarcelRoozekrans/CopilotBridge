@@ -3,7 +3,9 @@ import { convertMcpServers } from '../../mcpConverter';
 import { mergeMcpConfigs, removeServerFromConfig } from '../../mcpWriter';
 import { createEmptyManifest, recordMcpImport, removeMcpRecord, isMcpServerImported } from '../../stateManager';
 import { parseMcpJson } from '../../localReader';
-import { McpServerInfo } from '../../types';
+import { McpServerInfo, PluginInfo, SkillInfo } from '../../types';
+import { ImportService } from '../../importService';
+import { SkillBridgeTreeProvider } from '../../treeView';
 
 describe('MCP import integration', () => {
     it('should convert, merge, and track a full import cycle', () => {
@@ -80,5 +82,166 @@ describe('MCP import integration', () => {
 
         const merged = mergeMcpConfigs({ servers: {} }, converted, []);
         assert.ok(merged.servers['remote']);
+    });
+});
+
+describe('Remote MCP discovery integration', () => {
+    function makeSkill(name: string, source: 'local' | 'remote'): SkillInfo {
+        return { name, description: 'test', content: '# test', pluginName: 'longterm-memory', pluginVersion: '1.0.0', marketplace: 'test', source };
+    }
+
+    function makeMcpServer(name: string): McpServerInfo {
+        return { name, config: { command: 'npx', args: ['-y', `${name}-mcp`] }, pluginName: 'longterm-memory', pluginVersion: '1.0.0', marketplace: 'MarcelRoozekrans/LongtermMemory-MCP' };
+    }
+
+    it('should show MCP servers in TreeView when discovered from remote marketplace', () => {
+        // Simulates: remote plugin has .mcp.json, no local cache
+        const remotePlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [makeSkill('long-term-memory', 'remote')],
+            mcpServers: [makeMcpServer('longterm-memory')],
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        const service = new ImportService({ fsPath: '/tmp/test', path: '/tmp/test' } as any);
+        const merged = service.mergePluginLists([], [remotePlugin]);
+
+        const treeProvider = new SkillBridgeTreeProvider();
+        treeProvider.setData(merged, createEmptyManifest());
+
+        // Plugin should appear
+        const roots = treeProvider.getChildren(undefined);
+        assert.strictEqual(roots.length, 1);
+        assert.strictEqual(roots[0].label, 'longterm-memory');
+
+        // MCP group should appear under plugin
+        const children = treeProvider.getChildren(roots[0]);
+        const mcpGroup = children.find(c => c.itemType === 'mcpGroup');
+        assert.ok(mcpGroup, 'MCP Servers group should appear');
+
+        // MCP server should be listed
+        const servers = treeProvider.getChildren(mcpGroup!);
+        assert.strictEqual(servers.length, 1);
+        assert.strictEqual(servers[0].label, 'longterm-memory');
+        assert.strictEqual(servers[0].contextValue, 'mcpServer-available');
+    });
+
+    it('should preserve remote MCP servers when merging with local plugin that has none', () => {
+        // Simulates: local cache has plugin without .mcp.json, remote has .mcp.json
+        const localPlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [makeSkill('long-term-memory', 'local')],
+            marketplace: 'local-cache',
+            source: 'local',
+            // No mcpServers — local cache doesn't have .mcp.json
+        };
+        const remotePlugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Memory plugin',
+            version: '1.0.0',
+            skills: [makeSkill('long-term-memory', 'remote')],
+            mcpServers: [makeMcpServer('longterm-memory')],
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        const service = new ImportService({ fsPath: '/tmp/test', path: '/tmp/test' } as any);
+        const merged = service.mergePluginLists([localPlugin], [remotePlugin]);
+
+        assert.strictEqual(merged.length, 1);
+        assert.strictEqual(merged[0].source, 'both');
+        assert.ok(merged[0].mcpServers, 'Remote MCP servers should be merged into local plugin');
+        assert.strictEqual(merged[0].mcpServers!.length, 1);
+        assert.strictEqual(merged[0].mcpServers![0].name, 'longterm-memory');
+
+        // TreeView should show MCP group
+        const treeProvider = new SkillBridgeTreeProvider();
+        treeProvider.setData(merged, createEmptyManifest());
+
+        const pluginItem = treeProvider.getChildren(undefined)[0];
+        const children = treeProvider.getChildren(pluginItem);
+        const mcpGroup = children.find(c => c.itemType === 'mcpGroup');
+        assert.ok(mcpGroup, 'MCP group should appear after merge');
+    });
+
+    it('should parse real LongtermMemory-MCP .mcp.json and show in TreeView', () => {
+        // Uses actual .mcp.json content from the repo
+        const raw = '{"longterm-memory":{"command":"npx","args":["-y","longterm-memory-mcp"]}}';
+        const servers = parseMcpJson(raw, 'longterm-memory', '1.0.0', 'MarcelRoozekrans/LongtermMemory-MCP');
+
+        assert.strictEqual(servers.length, 1);
+        assert.strictEqual(servers[0].name, 'longterm-memory');
+        assert.strictEqual(servers[0].config.command, 'npx');
+        assert.deepStrictEqual(servers[0].config.args, ['-y', 'longterm-memory-mcp']);
+
+        const plugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'Persistent semantic long-term memory',
+            version: '1.0.0',
+            skills: [makeSkill('long-term-memory', 'remote')],
+            mcpServers: servers,
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        const treeProvider = new SkillBridgeTreeProvider();
+        treeProvider.setData([plugin], createEmptyManifest());
+
+        const pluginItem = treeProvider.getChildren(undefined)[0];
+        const children = treeProvider.getChildren(pluginItem);
+
+        // Should have both skill and MCP group
+        const skillItems = children.filter(c => c.itemType === 'skill');
+        const mcpGroup = children.find(c => c.itemType === 'mcpGroup');
+        assert.strictEqual(skillItems.length, 1);
+        assert.ok(mcpGroup, 'Should have MCP group');
+
+        // MCP server should convert correctly to VS Code format
+        const converted = convertMcpServers(servers);
+        assert.strictEqual(converted.servers['longterm-memory'].type, 'stdio');
+        assert.strictEqual(converted.servers['longterm-memory'].command, 'npx');
+        assert.deepStrictEqual(converted.servers['longterm-memory'].args, ['-y', 'longterm-memory-mcp']);
+        assert.strictEqual(converted.inputs.length, 0); // No secrets
+    });
+
+    it('should track imported MCP server status in TreeView', () => {
+        const servers = parseMcpJson(
+            '{"longterm-memory":{"command":"npx","args":["-y","longterm-memory-mcp"]}}',
+            'longterm-memory', '1.0.0', 'MarcelRoozekrans/LongtermMemory-MCP'
+        );
+
+        const plugin: PluginInfo = {
+            name: 'longterm-memory',
+            description: 'test',
+            version: '1.0.0',
+            skills: [],
+            mcpServers: servers,
+            marketplace: 'MarcelRoozekrans/LongtermMemory-MCP',
+            source: 'remote',
+        };
+
+        // Before import: available
+        let manifest = createEmptyManifest();
+        const treeProvider = new SkillBridgeTreeProvider();
+        treeProvider.setData([plugin], manifest);
+
+        let pluginItem = treeProvider.getChildren(undefined)[0];
+        let mcpGroup = treeProvider.getChildren(pluginItem).find(c => c.itemType === 'mcpGroup')!;
+        let serverNodes = treeProvider.getChildren(mcpGroup);
+        assert.strictEqual(serverNodes[0].contextValue, 'mcpServer-available');
+
+        // After import: synced
+        manifest = recordMcpImport(manifest, 'longterm-memory', 'longterm-memory@MarcelRoozekrans/LongtermMemory-MCP');
+        treeProvider.setData([plugin], manifest);
+
+        pluginItem = treeProvider.getChildren(undefined)[0];
+        mcpGroup = treeProvider.getChildren(pluginItem).find(c => c.itemType === 'mcpGroup')!;
+        serverNodes = treeProvider.getChildren(mcpGroup);
+        assert.strictEqual(serverNodes[0].contextValue, 'mcpServer-synced');
     });
 });

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.2...copilot-skill-bridge-v0.2.3) (2026-03-02)
+
+
+### Bug Fixes
+
+* re-read config on each refresh so new marketplaces take effect ([#5](https://github.com/MarcelRoozekrans/CopilotBridge/issues/5)) ([48ec873](https://github.com/MarcelRoozekrans/CopilotBridge/commit/48ec8735e2bf2058a86b69c94ed20211b6724c2c))
+
 ## [0.2.2](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.1...copilot-skill-bridge-v0.2.2) (2026-03-02)
 
 

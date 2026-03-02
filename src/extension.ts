@@ -65,12 +65,16 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
     }
 
-    const config = vscode.workspace.getConfiguration('copilotSkillBridge');
-    const cachePath = config.get<string>('claudeCachePath', '~/.claude/plugins/cache');
-    const remoteRepos = config.get<string[]>('marketplaces', ['obra/superpowers']);
-    const checkInterval = config.get<number>('checkInterval', 86400);
-    const outputFormats = config.get<string[]>('outputFormats', ['instructions', 'prompts']);
-    const generateRegistry = config.get<boolean>('generateRegistry', true);
+    function getConfig() {
+        const config = vscode.workspace.getConfiguration('copilotSkillBridge');
+        return {
+            cachePath: config.get<string>('claudeCachePath', '~/.claude/plugins/cache'),
+            remoteRepos: config.get<string[]>('marketplaces', ['obra/superpowers']),
+            checkInterval: config.get<number>('checkInterval', 86400),
+            outputFormats: config.get<string[]>('outputFormats', ['instructions', 'prompts']),
+            generateRegistry: config.get<boolean>('generateRegistry', true),
+        };
+    }
 
     const workspaceUri = workspaceFolder.uri;
     const importService = new ImportService(workspaceUri);
@@ -85,6 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Initial discovery
     async function refreshAll() {
+        const { cachePath, remoteRepos } = getConfig();
         const plugins = await importService.discoverAllPlugins(cachePath, remoteRepos);
         importService.setPlugins(plugins);
         const manifest = await loadManifest(workspaceUri);
@@ -97,6 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('copilotSkillBridge.importSkill', async (item?: SkillTreeItem) => {
             if (item?.skillInfo) {
+                const { outputFormats, generateRegistry } = getConfig();
                 await importService.importSkill(item.skillInfo, outputFormats, generateRegistry);
                 await refreshAll();
             } else {
@@ -110,6 +116,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a plugin from the Copilot Skill Bridge sidebar.');
                 return;
             }
+            const { outputFormats, generateRegistry } = getConfig();
             for (const skill of plugin.skills) {
                 await importService.importSkill(skill, outputFormats, generateRegistry);
             }
@@ -126,6 +133,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('copilotSkillBridge.removeSkill', async (item?: SkillTreeItem) => {
             if (item?.skillInfo) {
+                const { generateRegistry } = getConfig();
                 await importService.removeSkill(item.skillInfo.name, generateRegistry);
                 await refreshAll();
             }
@@ -168,9 +176,10 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     // Start update watcher
-    updateWatcher = new UpdateWatcher(cachePath);
+    const initialConfig = getConfig();
+    updateWatcher = new UpdateWatcher(initialConfig.cachePath);
     updateWatcher.startLocalWatcher();
-    updateWatcher.startRemoteChecker(remoteRepos, checkInterval, await loadManifest(workspaceUri));
+    updateWatcher.startRemoteChecker(initialConfig.remoteRepos, initialConfig.checkInterval, await loadManifest(workspaceUri));
 
     updateWatcher.onLocalChange(async (filePath) => {
         const choice = await vscode.window.showInformationMessage(
