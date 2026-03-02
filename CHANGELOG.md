@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.0...copilot-skill-bridge-v0.4.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* fetch repo star counts for marketplace search ([#11](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/11)) ([13a6e3e](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/13a6e3eee176b84a2a9d28a03f05f5f69f6713c5))
+
 ## [0.4.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.3.0...copilot-skill-bridge-v0.4.0) (2026-03-02)
 
 
