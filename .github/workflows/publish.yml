@@ -1,0 +1,45 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: xvfb-run -a npm run test:integration
+
+      - name: Build
+        run: npm run build
+
+      - name: Package
+        run: npx vsce package
+
+      - name: Publish to Marketplace
+        run: npx vsce publish --pat ${{ secrets.VSCE_PAT }}
+
+      - name: Upload VSIX to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.event.release.tag_name }} *.vsix
