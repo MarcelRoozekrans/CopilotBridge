@@ -15,12 +15,33 @@ export interface SkillInfo {
     filePath?: string;
 }
 
+export interface ClaudeMcpServerConfig {
+    command?: string;
+    args?: string[];
+    env?: Record<string, string>;
+    url?: string;
+}
+
+export interface McpServerInfo {
+    name: string;
+    config: ClaudeMcpServerConfig;
+    pluginName: string;
+    pluginVersion: string;
+    marketplace: string;
+}
+
+export interface McpServerRecord {
+    source: string;
+    importedAt: string;
+}
+
 export interface PluginInfo {
     name: string;
     description: string;
     version: string;
     author?: { name: string; email?: string };
     skills: SkillInfo[];
+    mcpServers?: McpServerInfo[];
     marketplace: string;
     source: SkillSource;
 }
@@ -42,6 +63,7 @@ export interface SkillImportState {
 
 export interface BridgeManifest {
     skills: Record<string, SkillImportState>;
+    mcpServers: Record<string, McpServerRecord>;
     marketplaces: Array<{ repo: string; lastChecked: string }>;
     settings: {
         checkInterval: number;

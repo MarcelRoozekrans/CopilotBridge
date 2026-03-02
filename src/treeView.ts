@@ -51,7 +51,7 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
     readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
     private plugins: PluginInfo[] = [];
-    private manifest: BridgeManifest = { skills: {}, marketplaces: [], settings: { checkInterval: 86400, autoAcceptUpdates: false } };
+    private manifest: BridgeManifest = { skills: {}, mcpServers: {}, marketplaces: [], settings: { checkInterval: 86400, autoAcceptUpdates: false } };
 
     setData(plugins: PluginInfo[], manifest: BridgeManifest) {
         this.plugins = plugins;

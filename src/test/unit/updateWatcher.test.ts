@@ -55,6 +55,7 @@ describe('UpdateWatcher', () => {
         // Start a remote checker with a long interval so it doesn't fire
         watcher.startRemoteChecker(['owner/repo'], 999999, {
             skills: {},
+            mcpServers: {},
             marketplaces: [],
             settings: { checkInterval: 86400, autoAcceptUpdates: false },
         });
@@ -66,6 +67,7 @@ describe('UpdateWatcher', () => {
     it('should restart remote checker when called again', () => {
         const manifest = {
             skills: {},
+            mcpServers: {},
             marketplaces: [],
             settings: { checkInterval: 86400, autoAcceptUpdates: false },
         };

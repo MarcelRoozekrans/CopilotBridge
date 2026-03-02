@@ -7,6 +7,7 @@ const MANIFEST_FILENAME = '.copilot-skill-bridge.json';
 export function createEmptyManifest(): BridgeManifest {
     return {
         skills: {},
+        mcpServers: {},
         marketplaces: [],
         settings: {
             checkInterval: 86400,
