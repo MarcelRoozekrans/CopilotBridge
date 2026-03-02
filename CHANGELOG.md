@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.2.3...copilot-skill-bridge-v0.3.0) (2026-03-02)
+
+
+### Features
+
+* add GitHub marketplace search to Add Marketplace command ([#7](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/7)) ([8a73535](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/8a735358a0d33b7e8e7d96698b6b121cac5e418f))
+
 ## [0.2.3](https://github.com/MarcelRoozekrans/CopilotBridge/compare/copilot-skill-bridge-v0.2.2...copilot-skill-bridge-v0.2.3) (2026-03-02)
 
 
