@@ -1,0 +1,74 @@
+import * as vscode from 'vscode';
+import * as crypto from 'crypto';
+import { BridgeManifest, SkillImportState } from './types';
+
+const MANIFEST_FILENAME = '.copilot-skill-bridge.json';
+
+export function createEmptyManifest(): BridgeManifest {
+    return {
+        skills: {},
+        marketplaces: [],
+        settings: {
+            checkInterval: 86400,
+            autoAcceptUpdates: false,
+        },
+    };
+}
+
+export function computeHash(content: string): string {
+    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
+}
+
+export function isSkillImported(manifest: BridgeManifest, skillName: string): boolean {
+    return skillName in manifest.skills;
+}
+
+export function isSkillOutdated(manifest: BridgeManifest, skillName: string, currentSourceHash: string): boolean {
+    const state = manifest.skills[skillName];
+    if (!state) { return false; }
+    return state.importedHash !== currentSourceHash;
+}
+
+export async function loadManifest(workspaceUri: vscode.Uri): Promise<BridgeManifest> {
+    const manifestUri = vscode.Uri.joinPath(workspaceUri, '.github', MANIFEST_FILENAME);
+    try {
+        const raw = await vscode.workspace.fs.readFile(manifestUri);
+        return JSON.parse(Buffer.from(raw).toString('utf-8')) as BridgeManifest;
+    } catch {
+        return createEmptyManifest();
+    }
+}
+
+export async function saveManifest(workspaceUri: vscode.Uri, manifest: BridgeManifest): Promise<void> {
+    const githubDir = vscode.Uri.joinPath(workspaceUri, '.github');
+    await vscode.workspace.fs.createDirectory(githubDir);
+    const manifestUri = vscode.Uri.joinPath(githubDir, MANIFEST_FILENAME);
+    const content = JSON.stringify(manifest, null, 2);
+    await vscode.workspace.fs.writeFile(manifestUri, Buffer.from(content, 'utf-8'));
+}
+
+export function recordImport(
+    manifest: BridgeManifest,
+    skillName: string,
+    source: string,
+    contentHash: string
+): BridgeManifest {
+    return {
+        ...manifest,
+        skills: {
+            ...manifest.skills,
+            [skillName]: {
+                source,
+                sourceHash: contentHash,
+                importedHash: contentHash,
+                importedAt: new Date().toISOString(),
+                locallyModified: false,
+            },
+        },
+    };
+}
+
+export function removeSkillRecord(manifest: BridgeManifest, skillName: string): BridgeManifest {
+    const { [skillName]: _, ...remainingSkills } = manifest.skills;
+    return { ...manifest, skills: remainingSkills };
+}
