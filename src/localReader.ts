@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
-import { SkillInfo, PluginInfo, PluginJson } from './types';
+import { SkillInfo, PluginInfo, PluginJson, McpServerInfo, ClaudeMcpServerConfig } from './types';
 import { parseSkillFrontmatter } from './parser';
 
 export function resolveClaudeCachePath(configPath: string): string {
@@ -34,6 +34,29 @@ export function buildSkillInfo(
         source: 'local',
         filePath,
     };
+}
+
+export function parseMcpJson(
+    raw: string,
+    pluginName: string,
+    pluginVersion: string,
+    marketplace: string,
+): McpServerInfo[] {
+    try {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            return [];
+        }
+        return Object.entries(parsed).map(([name, config]) => ({
+            name,
+            config: config as ClaudeMcpServerConfig,
+            pluginName,
+            pluginVersion,
+            marketplace,
+        }));
+    } catch {
+        return [];
+    }
 }
 
 export async function discoverLocalPlugins(cachePath: string): Promise<PluginInfo[]> {
@@ -86,12 +109,28 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
             const skillsDir = vscode.Uri.joinPath(versionUri, pluginMeta.skills ?? 'skills');
             const skills = await discoverSkillsInDir(skillsDir, pluginMeta.name, latestVersion, marketplaceName);
 
+            // Discover MCP servers
+            let mcpServers: McpServerInfo[] = [];
+            try {
+                const mcpJsonUri = vscode.Uri.joinPath(versionUri, '.mcp.json');
+                const mcpRaw = await vscode.workspace.fs.readFile(mcpJsonUri);
+                mcpServers = parseMcpJson(
+                    Buffer.from(mcpRaw).toString('utf-8'),
+                    pluginMeta.name,
+                    latestVersion,
+                    marketplaceName,
+                );
+            } catch {
+                // No .mcp.json — that's fine
+            }
+
             plugins.push({
                 name: pluginMeta.name,
                 description: pluginMeta.description,
                 version: latestVersion,
                 author: pluginMeta.author,
                 skills,
+                mcpServers,
                 marketplace: marketplaceName,
                 source: 'local',
             });
