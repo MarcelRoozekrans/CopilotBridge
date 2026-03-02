@@ -101,3 +101,10 @@ export interface MarketplaceJson {
         author?: { name: string; email?: string };
     }>;
 }
+
+export interface MarketplaceSearchResult {
+    repo: string;
+    description: string;
+    stars: number;
+    url: string;
+}
