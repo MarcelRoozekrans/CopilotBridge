@@ -119,6 +119,23 @@ describe('parseSearchResults', () => {
         assert.strictEqual(results.length, 0);
     });
 
+    it('should default stars to 0 when stargazers_count is missing', () => {
+        const response: GitHubCodeSearchResponse = {
+            total_count: 1,
+            items: [
+                {
+                    repository: {
+                        full_name: 'user/repo',
+                        description: 'Test',
+                        html_url: 'https://github.com/user/repo',
+                    },
+                },
+            ],
+        };
+        const results = parseSearchResults(response);
+        assert.strictEqual(results[0].stars, 0);
+    });
+
     it('should handle null description gracefully', () => {
         const response: GitHubCodeSearchResponse = {
             total_count: 1,

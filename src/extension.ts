@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
             function makeItems(results: import('./types').MarketplaceSearchResult[]): vscode.QuickPickItem[] {
                 const items: vscode.QuickPickItem[] = results.map(r => ({
                     label: r.repo,
-                    description: `$(star) ${r.stars}`,
+                    description: r.stars > 0 ? `$(star) ${r.stars}` : '',
                     detail: r.description,
                 }));
                 items.push({ label: MANUAL_ENTRY_LABEL, description: '', detail: 'Type an owner/repo path directly', alwaysShow: true });
