@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.2...copilot-skill-bridge-v0.5.0) (2026-03-02)
+
+
+### Features
+
+* group plugins under marketplace nodes in tree view ([#15](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/15)) ([44348dc](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/44348dce29b98a73eb8230701697f54b9d2e3b58))
+
 ## [0.4.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.1...copilot-skill-bridge-v0.4.2) (2026-03-02)
 
 
