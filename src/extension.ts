@@ -24,21 +24,87 @@ export async function activate(context: vscode.ExtensionContext) {
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.addMarketplace', async () => {
-            const config = vscode.workspace.getConfiguration('copilotSkillBridge');
-            const repo = await vscode.window.showInputBox({
-                prompt: 'Enter GitHub repo (owner/name)',
-                placeHolder: 'obra/superpowers',
-                validateInput: (value) => {
-                    return /^[\w.-]+\/[\w.-]+$/.test(value) ? null : 'Format: owner/repo-name';
-                },
-            });
-            if (repo) {
-                const current = config.get<string[]>('marketplaces', []);
-                if (!current.includes(repo)) {
-                    await config.update('marketplaces', [...current, repo], vscode.ConfigurationTarget.Global);
-                    vscode.window.showInformationMessage(`Added marketplace: ${repo}`);
-                }
+            const { searchMarketplaces } = await import('./marketplaceSearch');
+
+            const quickPick = vscode.window.createQuickPick();
+            quickPick.placeholder = 'Search GitHub for Claude marketplaces...';
+            quickPick.matchOnDescription = true;
+            quickPick.busy = true;
+
+            const MANUAL_ENTRY_LABEL = '$(edit) Enter manually...';
+
+            function makeItems(results: import('./types').MarketplaceSearchResult[]): vscode.QuickPickItem[] {
+                const items: vscode.QuickPickItem[] = results.map(r => ({
+                    label: r.repo,
+                    description: `$(star) ${r.stars}`,
+                    detail: r.description,
+                }));
+                items.push({ label: MANUAL_ENTRY_LABEL, description: '', detail: 'Type an owner/repo path directly', alwaysShow: true });
+                return items;
             }
+
+            // Initial load
+            try {
+                const results = await searchMarketplaces();
+                quickPick.items = makeItems(results);
+            } catch {
+                quickPick.items = [{ label: MANUAL_ENTRY_LABEL, description: '', detail: 'Search unavailable — enter manually', alwaysShow: true }];
+            }
+            quickPick.busy = false;
+
+            // Debounced search on input
+            let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+            quickPick.onDidChangeValue(value => {
+                if (debounceTimer) { clearTimeout(debounceTimer); }
+                debounceTimer = setTimeout(async () => {
+                    quickPick.busy = true;
+                    try {
+                        const results = await searchMarketplaces(value || undefined);
+                        quickPick.items = makeItems(results);
+                    } catch {
+                        // Keep existing items on error
+                    }
+                    quickPick.busy = false;
+                }, 400);
+            });
+
+            quickPick.onDidAccept(async () => {
+                const selected = quickPick.selectedItems[0];
+                quickPick.dispose();
+                if (debounceTimer) { clearTimeout(debounceTimer); }
+
+                let repo: string | undefined;
+
+                if (selected?.label === MANUAL_ENTRY_LABEL) {
+                    repo = await vscode.window.showInputBox({
+                        prompt: 'Enter GitHub repo (owner/name)',
+                        placeHolder: 'obra/superpowers',
+                        validateInput: (value) => {
+                            return /^[\w.-]+\/[\w.-]+$/.test(value) ? null : 'Format: owner/repo-name';
+                        },
+                    });
+                } else if (selected) {
+                    repo = selected.label;
+                }
+
+                if (repo) {
+                    const config = vscode.workspace.getConfiguration('copilotSkillBridge');
+                    const current = config.get<string[]>('marketplaces', []);
+                    if (current.includes(repo)) {
+                        vscode.window.showInformationMessage(`Marketplace already added: ${repo}`);
+                    } else {
+                        await config.update('marketplaces', [...current, repo], vscode.ConfigurationTarget.Global);
+                        vscode.window.showInformationMessage(`Added marketplace: ${repo}`);
+                    }
+                }
+            });
+
+            quickPick.onDidHide(() => {
+                quickPick.dispose();
+                if (debounceTimer) { clearTimeout(debounceTimer); }
+            });
+
+            quickPick.show();
         }),
     );
 
