@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, SkillStatus } from './types';
+import { SkillInfo, PluginInfo, SkillStatus, McpServerInfo } from './types';
 import { BridgeManifest } from './types';
 import { computeHash, isSkillImported, isSkillOutdated } from './stateManager';
 
-export type TreeItemType = 'plugin' | 'skill';
+export type TreeItemType = 'plugin' | 'skill' | 'mcpGroup' | 'mcpServer';
 
 export class SkillTreeItem extends vscode.TreeItem {
     constructor(
@@ -13,6 +13,7 @@ export class SkillTreeItem extends vscode.TreeItem {
         public readonly skillInfo?: SkillInfo,
         public readonly status?: SkillStatus,
         collapsibleState?: vscode.TreeItemCollapsibleState,
+        public readonly mcpServerInfo?: McpServerInfo,
     ) {
         super(label, collapsibleState ?? vscode.TreeItemCollapsibleState.None);
 
@@ -41,6 +42,19 @@ export class SkillTreeItem extends vscode.TreeItem {
                     this.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('list.errorForeground'));
                     this.description = 'conflict';
                     break;
+            }
+        } else if (itemType === 'mcpGroup') {
+            this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+            this.iconPath = new vscode.ThemeIcon('plug');
+            this.contextValue = 'mcpGroup';
+        } else if (itemType === 'mcpServer') {
+            this.contextValue = `mcpServer-${status}`;
+            if (status === 'synced') {
+                this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));
+                this.description = 'imported';
+            } else {
+                this.iconPath = new vscode.ThemeIcon('cloud-download');
+                this.description = 'available';
             }
         }
     }
@@ -73,7 +87,10 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
         }
 
         if (element.itemType === 'plugin' && element.pluginInfo) {
-            return element.pluginInfo.skills.map(skill => {
+            const children: SkillTreeItem[] = [];
+
+            // Skills
+            for (const skill of element.pluginInfo.skills) {
                 const hash = computeHash(skill.content);
                 let status: SkillStatus;
 
@@ -86,7 +103,24 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
                     status = 'synced';
                 }
 
-                return new SkillTreeItem(skill.name, 'skill', element.pluginInfo, skill, status);
+                children.push(new SkillTreeItem(skill.name, 'skill', element.pluginInfo, skill, status));
+            }
+
+            // MCP group
+            const mcpServers = element.pluginInfo.mcpServers ?? [];
+            if (mcpServers.length > 0) {
+                children.push(new SkillTreeItem('MCP Servers', 'mcpGroup', element.pluginInfo));
+            }
+
+            return children;
+        }
+
+        if (element.itemType === 'mcpGroup' && element.pluginInfo) {
+            const servers = element.pluginInfo.mcpServers ?? [];
+            return servers.map(srv => {
+                const imported = srv.name in (this.manifest.mcpServers ?? {});
+                const status: SkillStatus = imported ? 'synced' : 'available';
+                return new SkillTreeItem(srv.name, 'mcpServer', element.pluginInfo, undefined, status, undefined, srv);
             });
         }
 

@@ -33,6 +33,32 @@ class MockFileSystemWatcher {
     }
 }
 
+class MockTreeItem {
+    label: string;
+    collapsibleState?: number;
+    iconPath?: any;
+    description?: string;
+    contextValue?: string;
+    constructor(label: string, collapsibleState?: number) {
+        this.label = label;
+        this.collapsibleState = collapsibleState;
+    }
+}
+
+class MockThemeIcon {
+    constructor(public id: string, public color?: any) {}
+}
+
+class MockThemeColor {
+    constructor(public id: string) {}
+}
+
+const TreeItemCollapsibleState = {
+    None: 0,
+    Collapsed: 1,
+    Expanded: 2,
+};
+
 const vscodeMock = {
     Uri: {
         file: (p: string) => ({ fsPath: p, path: p }),
@@ -67,6 +93,10 @@ const vscodeMock = {
         showWarningMessage: async () => undefined,
     },
     ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
+    TreeItem: MockTreeItem,
+    TreeItemCollapsibleState,
+    ThemeIcon: MockThemeIcon,
+    ThemeColor: MockThemeColor,
 };
 
 // Hook into Module._resolveFilename to intercept 'vscode' requires
