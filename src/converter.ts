@@ -68,6 +68,17 @@ Follow the instructions in .github/instructions/${name}.instructions.md
 `;
 }
 
+export function generateFullPromptFile(name: string, description: string, convertedBody: string): string {
+    return `---
+name: ${name}
+description: '${description.replace(/'/g, "''")}'
+agent: agent
+---
+
+${convertedBody}
+`;
+}
+
 export function generateRegistryEntry(name: string, description: string): RegistryEntry {
     return {
         name,

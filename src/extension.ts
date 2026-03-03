@@ -141,7 +141,7 @@ export async function activate(context: vscode.ExtensionContext) {
             cachePath: config.get<string>('claudeCachePath', '~/.claude/plugins/cache'),
             remoteRepos: config.get<string[]>('marketplaces', ['obra/superpowers']),
             checkInterval: config.get<number>('checkInterval', 86400),
-            outputFormats: config.get<string[]>('outputFormats', ['instructions', 'prompts']),
+            outputFormats: config.get<string[]>('outputFormats', ['prompts']),
             generateRegistry: config.get<boolean>('generateRegistry', true),
         };
     }

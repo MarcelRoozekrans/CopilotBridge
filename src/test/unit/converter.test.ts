@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateRegistryEntry } from '../../converter';
+import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateRegistryEntry, generateFullPromptFile } from '../../converter';
 
 describe('convertSkillContent', () => {
     it('should replace TodoWrite references', () => {
@@ -87,6 +87,26 @@ describe('generatePromptFile', () => {
         assert.ok(result.includes('agent: agent'));
         assert.ok(result.includes('.github/instructions/brainstorming.instructions.md'));
         assert.ok(!result.includes('Body content'));
+    });
+});
+
+describe('generateFullPromptFile', () => {
+    it('should include full converted body in the prompt file', () => {
+        const result = generateFullPromptFile('brainstorming', 'Creative work helper', 'Body content here');
+        assert.ok(result.startsWith('---\n'));
+        assert.ok(result.includes('name: brainstorming'));
+        assert.ok(result.includes('agent: agent'));
+        assert.ok(result.includes('Body content here'));
+    });
+
+    it('should not include applyTo in prompt frontmatter', () => {
+        const result = generateFullPromptFile('test', 'desc', 'body');
+        assert.ok(!result.includes('applyTo'));
+    });
+
+    it('should escape single quotes in description', () => {
+        const result = generateFullPromptFile('test', "it's a test", 'body');
+        assert.ok(result.includes("it''s a test"));
     });
 });
 

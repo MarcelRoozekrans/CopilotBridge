@@ -75,6 +75,54 @@ describe('ImportService.convertSkill', () => {
     });
 });
 
+describe('ImportService.writeSkillFiles prompt format', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let writtenFiles: Array<{ path: string; content: string }>;
+    let origWriteFile: any;
+    let origShowInfo: any;
+
+    before(() => {
+        origWriteFile = vscode.workspace.fs.writeFile;
+        origShowInfo = vscode.window.showInformationMessage;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        writtenFiles = [];
+        vscode.workspace.fs.writeFile = async (uri: any, content: Buffer) => {
+            writtenFiles.push({ path: uri.fsPath, content: content.toString('utf-8') });
+        };
+    });
+
+    afterEach(() => {
+        vscode.workspace.fs.writeFile = origWriteFile;
+        vscode.window.showInformationMessage = origShowInfo;
+    });
+
+    it('should write full-content prompt file when format is prompts', async () => {
+        const skill = makeSkill();
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([skill], ['prompts'], false);
+
+        const promptFile = writtenFiles.find(f => f.path.includes('.prompt.md'));
+        assert.ok(promptFile, 'Should have written a prompt file');
+        assert.ok(promptFile!.content.includes('agent: agent'), 'Prompt should have agent frontmatter');
+        assert.ok(promptFile!.content.length > 100, 'Prompt should contain full body, not just a pointer');
+    });
+
+    it('should write pointer prompt when format includes instructions', async () => {
+        const skill = makeSkill();
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([skill], ['instructions', 'prompts'], false);
+
+        const promptFile = writtenFiles.find(f => f.path.includes('.prompt.md'));
+        assert.ok(promptFile, 'Should have written a prompt file');
+        assert.ok(promptFile!.content.includes('Follow the instructions in'), 'Should be a pointer when instructions also generated');
+    });
+});
+
 describe('ImportService MCP methods', () => {
     const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
     let service: ImportService;
@@ -356,5 +404,76 @@ describe('ImportService.importAllSkills', () => {
 
         assert.ok(confirmationMsg.includes('10 skill(s)'));
         assert.ok(confirmationMsg.includes('and 7 more'));
+    });
+});
+
+describe('ImportService compatibility gate', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let warningMessages: string[];
+    let origShowWarning: any;
+    let origShowInfo: any;
+
+    before(() => {
+        origShowWarning = vscode.window.showWarningMessage;
+        origShowInfo = vscode.window.showInformationMessage;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        warningMessages = [];
+        vscode.window.showWarningMessage = async (msg: string) => {
+            warningMessages.push(msg);
+            return undefined;
+        };
+    });
+
+    afterEach(() => {
+        vscode.window.showWarningMessage = origShowWarning;
+        vscode.window.showInformationMessage = origShowInfo;
+    });
+
+    it('should block import of incompatible skill with warning', async () => {
+        const skill = makeSkill({
+            content: 'Dispatch a subtask for each file. Launch parallel agents.',
+        });
+        vscode.window.showInformationMessage = async () => 'Accept';
+        await service.importSkill(skill, ['prompts'], false);
+        assert.ok(warningMessages.length > 0, 'Should show warning');
+        assert.ok(warningMessages[0].includes('incompatible'), 'Warning should mention incompatible');
+    });
+
+    it('should allow import of compatible skill', async () => {
+        const skill = makeSkill({
+            content: '---\nname: tdd\ndescription: TDD\n---\nWrite tests first.',
+        });
+        vscode.window.showInformationMessage = async () => 'Accept';
+        await service.importSkill(skill, ['prompts'], false);
+        assert.strictEqual(warningMessages.length, 0, 'Should not show warning');
+    });
+
+    it('should skip incompatible skills in bulk import', async () => {
+        const compatible = makeSkill({ name: 'tdd', content: '---\nname: tdd\ndescription: TDD\n---\nWrite tests.' });
+        const incompatible = makeSkill({ name: 'parallel', content: 'Launch parallel agents to work.' });
+
+        const infoMessages: string[] = [];
+        vscode.window.showInformationMessage = async (msg: string) => {
+            infoMessages.push(msg);
+            return 'Import All';
+        };
+
+        const result = await service.importAllSkills([compatible, incompatible], ['prompts'], false);
+        assert.strictEqual(result.imported.length, 1);
+        assert.ok(result.imported.includes('tdd'));
+        const confirmMsg = infoMessages.find(m => m.includes('incompatible'));
+        assert.ok(confirmMsg, 'Should mention incompatible in confirmation: ' + JSON.stringify(infoMessages));
+        assert.ok(confirmMsg!.includes('1 incompatible'));
+    });
+
+    it('should return empty when all skills incompatible in bulk', async () => {
+        const skill = makeSkill({ content: 'Dispatch subtask. Launch parallel agents.' });
+        const result = await service.importAllSkills([skill], ['prompts'], false);
+        assert.strictEqual(result.imported.length, 0);
     });
 });

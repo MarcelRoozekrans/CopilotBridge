@@ -185,7 +185,6 @@
             ]
           },
           "default": [
-            "instructions",
             "prompts"
           ],
           "description": "Which Copilot file formats to generate"
