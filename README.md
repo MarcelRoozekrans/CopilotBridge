@@ -7,12 +7,13 @@ Copilot Skill Bridge discovers skills from local Claude plugin caches and remote
 ## Features
 
 - **Skill Discovery** -- Finds skills from your local Claude plugin cache and configurable remote GitHub marketplace repositories. Search GitHub for new marketplaces directly from the command palette.
-- **Smart Conversion** -- Applies 31+ transformation rules to translate Claude-specific tool names, file paths, and conventions into Copilot equivalents.
+- **Smart Conversion** -- Applies 31+ transformation rules to translate Claude-specific tool names, file paths, and conventions into Copilot equivalents. MCP tool references are preserved as-is.
 - **Compatibility Analysis** -- Detects skills that require Claude-only infrastructure (sub-agent dispatch, parallel agents, meta-orchestrators) and marks them as incompatible. MCP-dependent skills are allowed when a matching MCP server is available.
+- **Always Active Skills** -- Mark any imported skill as "always active" to write it as a `.github/instructions/<name>.instructions.md` file with `applyTo: '**/*'`, so Copilot loads it on every message. Useful for generic skills like long-term memory that should always be available.
+- **Skill Preview** -- Click any skill in the sidebar to view its content in a read-only editor. Single skill imports show a side-by-side diff of the original vs. converted content before you accept.
 - **MCP Server Support** -- Discovers, imports, and manages MCP server configurations from plugins. Writes `.vscode/mcp.json` with proper stdio/HTTP configs and secret input detection.
-- **TreeView Sidebar** -- A dedicated activity bar panel groups plugins by marketplace, shows sync status with icons, and provides inline actions and right-click context menus for import/remove. Hover any item for a description tooltip.
+- **TreeView Sidebar** -- A dedicated activity bar panel groups plugins by marketplace, shows sync status with icons, and provides inline actions and right-click context menus for import/remove/embed. Hover any item for a description tooltip. Click "Open Source Repository" to visit a marketplace or plugin on GitHub.
 - **Bulk Import** -- Import all compatible skills from a plugin in one action with a modal confirmation, progress bar, and error summary.
-- **Diff Preview** -- Single skill imports show a side-by-side diff of the original vs. converted content before you accept.
 - **Update Watching** -- Periodically checks remote sources for new or updated skills and notifies you when changes are available.
 - **Marketplace Search** -- Search GitHub for Claude marketplace repositories with star counts, or enter a repo manually.
 - **GitHub Authentication** -- Optionally sign in with GitHub via the VS Code authentication API to access private repositories and increase API rate limits.
@@ -22,9 +23,11 @@ Copilot Skill Bridge discovers skills from local Claude plugin caches and remote
 1. **Install** the extension from the VS Code Marketplace.
 2. **Add a marketplace** -- Open the Copilot Skill Bridge sidebar and click "Add Marketplace" to search GitHub, or add repos manually in Settings under `copilotSkillBridge.marketplaces`.
 3. **Browse skills** -- Expand a marketplace or plugin in the sidebar to see available skills and MCP servers. Incompatible skills are shown with a dimmed icon and reason.
-4. **Import skills** -- Click the download icon on any available skill, right-click for more options, or use "Import All Skills" on a plugin node.
-5. **Import MCP servers** -- Click the download icon on MCP server nodes, or use "Import All MCP Servers" on the MCP Servers group.
-6. **Optionally sign in to GitHub** using the "Sign in to GitHub" command for access to private repos and higher rate limits.
+4. **Preview skills** -- Click any skill in the sidebar to view its content before importing.
+5. **Import skills** -- Click the download icon on any available skill, right-click for more options, or use "Import All Skills" on a plugin node.
+6. **Make skills always active** -- Right-click an imported skill and choose "Embed in Instructions" to write it as an always-active instructions file.
+7. **Import MCP servers** -- Click the download icon on MCP server nodes, or use "Import All MCP Servers" on the MCP Servers group.
+8. **Optionally sign in to GitHub** using the "Sign in to GitHub" command for access to private repos and higher rate limits.
 
 ## Output Formats
 
@@ -60,6 +63,10 @@ When only `prompts` is selected, the full converted skill content is embedded di
 | `copilotSkillBridge.importMcpServer` | Import MCP Server | Import a single MCP server configuration |
 | `copilotSkillBridge.importAllMcpServers` | Import All MCP Servers | Import all MCP servers from a plugin |
 | `copilotSkillBridge.removeMcpServer` | Remove MCP Server | Remove an imported MCP server configuration |
+| `copilotSkillBridge.showSkillContent` | Show Skill Content | View a skill's content in a read-only editor |
+| `copilotSkillBridge.openSourceRepo` | Open Source Repository | Open the marketplace or plugin repository on GitHub |
+| `copilotSkillBridge.embedSkill` | Embed in Instructions | Make a skill always active via an instructions file |
+| `copilotSkillBridge.unembedSkill` | Unembed from Instructions | Remove the always-active instructions file for a skill |
 
 ## How It Works
 
