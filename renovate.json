@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "groupName": "vscode packages",
+      "matchPackagePatterns": ["^@vscode/", "^@types/vscode$"]
+    },
+    {
+      "groupName": "testing",
+      "matchPackagePatterns": ["mocha", "sinon", "@types/mocha", "@types/sinon"]
+    },
+    {
+      "groupName": "commitlint",
+      "matchPackagePatterns": ["^@commitlint/", "^commitlint"]
+    }
+  ]
+}
