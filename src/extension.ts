@@ -8,11 +8,33 @@ import { updateCopilotInstructions } from './fileWriter';
 
 let updateWatcher: UpdateWatcher | undefined;
 
+const skillContentScheme = 'skill-bridge';
+const skillContentStore = new Map<string, string>();
+
+class SkillContentProvider implements vscode.TextDocumentContentProvider {
+    provideTextDocumentContent(uri: vscode.Uri): string {
+        return skillContentStore.get(uri.path) ?? '';
+    }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     const noWorkspace = 'Open a folder to use Copilot Skill Bridge.';
 
+    // Register virtual document provider for skill previews
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(skillContentScheme, new SkillContentProvider()),
+    );
+
     // Commands that work without a workspace
     context.subscriptions.push(
+        vscode.commands.registerCommand('copilotSkillBridge.showSkillContent', async (item?: SkillTreeItem) => {
+            if (!item?.skillInfo) { return; }
+            const key = `/${item.skillInfo.pluginName}/${item.skillInfo.name}`;
+            skillContentStore.set(key, item.skillInfo.content);
+            const uri = vscode.Uri.parse(`${skillContentScheme}:${key}.md`);
+            const doc = await vscode.workspace.openTextDocument(uri);
+            await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
+        }),
         vscode.commands.registerCommand('copilotSkillBridge.login', async () => {
             const { loginToGitHub } = await import('./auth');
             const token = await loginToGitHub();

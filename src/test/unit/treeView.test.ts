@@ -274,6 +274,44 @@ describe('TreeView tooltips', () => {
     });
 });
 
+describe('TreeView skill click command', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should set command on skill items to show content', () => {
+        const plugin = makePlugin({
+            marketplace: 'test',
+            skills: [{
+                name: 'tdd',
+                description: 'TDD skill',
+                content: 'Write tests first.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const skill = provider.getChildren(pluginItem).find(c => c.itemType === 'skill')!;
+        assert.ok(skill.command, 'Skill should have a click command');
+        assert.strictEqual(skill.command!.command, 'copilotSkillBridge.showSkillContent');
+        assert.strictEqual(skill.command!.arguments![0], skill);
+    });
+
+    it('should not set command on non-skill items', () => {
+        const plugin = makePlugin({ marketplace: 'test' });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        assert.strictEqual(pluginItem.command, undefined, 'Plugin item should not have click command');
+    });
+});
+
 describe('TreeView incompatible skills', () => {
     let provider: SkillBridgeTreeProvider;
 

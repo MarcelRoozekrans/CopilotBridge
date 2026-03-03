@@ -34,6 +34,13 @@ export class SkillTreeItem extends vscode.TreeItem {
         } else if (itemType === 'skill') {
             this.contextValue = `skill-${status}`;
             this.tooltip = skillInfo?.description ?? label;
+            if (skillInfo) {
+                this.command = {
+                    command: 'copilotSkillBridge.showSkillContent',
+                    title: 'Show Skill Content',
+                    arguments: [this],
+                };
+            }
             switch (status) {
                 case 'synced':
                     this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));

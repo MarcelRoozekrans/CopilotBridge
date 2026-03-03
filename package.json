@@ -98,6 +98,11 @@
         "command": "copilotSkillBridge.removeMcpServer",
         "title": "Remove MCP Server",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotSkillBridge.showSkillContent",
+        "title": "Show Skill Content",
+        "icon": "$(open-preview)"
       }
     ],
     "menus": {
