@@ -490,3 +490,132 @@ describe('ImportService compatibility gate', () => {
         assert.strictEqual(result.imported.length, 0);
     });
 });
+
+describe('ImportService.removeAllSkills', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let origWriteFile: any;
+    let origReadFile: any;
+    let origDelete: any;
+    let origShowInfo: any;
+    let origShowWarning: any;
+    let origWithProgress: any;
+    let deletedPaths: string[];
+    let fileStore: Map<string, Buffer>;
+
+    before(() => {
+        origWriteFile = vscode.workspace.fs.writeFile;
+        origReadFile = vscode.workspace.fs.readFile;
+        origDelete = vscode.workspace.fs.delete;
+        origShowInfo = vscode.window.showInformationMessage;
+        origShowWarning = vscode.window.showWarningMessage;
+        origWithProgress = vscode.window.withProgress;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        deletedPaths = [];
+        fileStore = new Map();
+        vscode.workspace.fs.writeFile = async (uri: any, buf: Uint8Array) => {
+            fileStore.set(uri.fsPath, Buffer.from(buf));
+        };
+        vscode.workspace.fs.readFile = async (uri: any) => {
+            const data = fileStore.get(uri.fsPath);
+            if (data) { return data; }
+            throw new Error('not found');
+        };
+        vscode.workspace.fs.delete = async (uri: any) => { deletedPaths.push(uri.fsPath); };
+        vscode.window.withProgress = async (_opts: any, task: any) => {
+            return task({ report: () => {} }, { isCancellationRequested: false });
+        };
+    });
+
+    afterEach(() => {
+        vscode.workspace.fs.writeFile = origWriteFile;
+        vscode.workspace.fs.readFile = origReadFile;
+        vscode.workspace.fs.delete = origDelete;
+        vscode.window.showInformationMessage = origShowInfo;
+        vscode.window.showWarningMessage = origShowWarning;
+        vscode.window.withProgress = origWithProgress;
+    });
+
+    it('should return empty result when no skills are imported', async () => {
+        vscode.window.showInformationMessage = async () => {};
+        const skill = makeSkill({ name: 'not-imported' });
+        const result = await service.removeAllSkills([skill], false);
+        assert.strictEqual(result.imported.length, 0);
+        assert.strictEqual(result.failed.length, 0);
+    });
+
+    it('should not proceed when user cancels confirmation', async () => {
+        // First import a skill so there's something to remove
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([makeSkill()], ['prompts'], false);
+
+        // Now cancel the remove
+        vscode.window.showWarningMessage = async () => 'Cancel';
+        const result = await service.removeAllSkills([makeSkill()], false);
+        assert.strictEqual(result.imported.length, 0);
+    });
+
+    it('should remove imported skills when user confirms', async () => {
+        // Import first
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([makeSkill()], ['prompts'], false);
+
+        // Remove
+        vscode.window.showWarningMessage = async () => 'Remove All';
+        vscode.window.showInformationMessage = async () => {};
+        const result = await service.removeAllSkills([makeSkill()], false);
+        assert.strictEqual(result.imported.length, 1);
+        assert.ok(result.imported.includes('test-skill'));
+        assert.ok(deletedPaths.length > 0, 'Should have deleted files');
+    });
+
+    it('should skip non-imported skills', async () => {
+        // Import one skill
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([makeSkill({ name: 'imported' })], ['prompts'], false);
+
+        // Try to remove both imported and non-imported
+        vscode.window.showWarningMessage = async () => 'Remove All';
+        vscode.window.showInformationMessage = async () => {};
+        const skills = [
+            makeSkill({ name: 'imported' }),
+            makeSkill({ name: 'not-imported' }),
+        ];
+        const result = await service.removeAllSkills(skills, false);
+        assert.strictEqual(result.imported.length, 1);
+        assert.ok(result.imported.includes('imported'));
+        assert.ok(!result.imported.includes('not-imported'));
+    });
+});
+
+describe('ImportService.getPluginsByMarketplace', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+    });
+
+    it('should return plugins matching the marketplace', () => {
+        const plugins: PluginInfo[] = [
+            { name: 'a', description: '', version: '1', skills: [], marketplace: 'user/repo', source: 'remote' },
+            { name: 'b', description: '', version: '1', skills: [], marketplace: 'user/repo', source: 'remote' },
+            { name: 'c', description: '', version: '1', skills: [], marketplace: 'other/repo', source: 'remote' },
+        ];
+        service.setPlugins(plugins);
+
+        const result = service.getPluginsByMarketplace('user/repo');
+        assert.strictEqual(result.length, 2);
+        assert.ok(result.every(p => p.marketplace === 'user/repo'));
+    });
+
+    it('should return empty array for unknown marketplace', () => {
+        service.setPlugins([]);
+        const result = service.getPluginsByMarketplace('nonexistent');
+        assert.strictEqual(result.length, 0);
+    });
+});

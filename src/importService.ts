@@ -246,6 +246,102 @@ export class ImportService {
         vscode.window.showInformationMessage(`Removed skill: ${skillName}`);
     }
 
+    async removeAllSkills(
+        skills: SkillInfo[],
+        generateRegistry: boolean,
+        mcpServers?: McpServerInfo[]
+    ): Promise<BulkImportResult> {
+        const result: BulkImportResult = { imported: [], failed: [] };
+        let manifest = await loadManifest(this.workspaceUri);
+
+        const importedSkills = skills.filter(s => isSkillImported(manifest, s.name));
+        const importedServers = (mcpServers ?? []).filter(s => isMcpServerImported(manifest, s.name));
+
+        if (importedSkills.length === 0 && importedServers.length === 0) {
+            vscode.window.showInformationMessage('No imported skills or MCP servers to remove.');
+            return result;
+        }
+
+        const parts: string[] = [];
+        if (importedSkills.length > 0) {
+            parts.push(`${importedSkills.length} skill(s)`);
+        }
+        if (importedServers.length > 0) {
+            parts.push(`${importedServers.length} MCP server(s)`);
+        }
+
+        const choice = await vscode.window.showWarningMessage(
+            `Remove ${parts.join(' and ')} from this project?`,
+            { modal: true },
+            'Remove All',
+            'Cancel'
+        );
+
+        if (choice !== 'Remove All') {
+            return result;
+        }
+
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Removing skills',
+                cancellable: true,
+            },
+            async (progress, token) => {
+                const total = importedSkills.length + importedServers.length;
+                const increment = total > 0 ? 100 / total : 100;
+
+                for (const skill of importedSkills) {
+                    if (token.isCancellationRequested) { break; }
+                    progress.report({ message: `${skill.name}...`, increment });
+
+                    try {
+                        await removeSkillFiles(this.workspaceUri, skill.name);
+                        manifest = removeSkillRecord(manifest, skill.name);
+                        result.imported.push(skill.name);
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        result.failed.push({ name: skill.name, error: msg });
+                    }
+                }
+
+                for (const server of importedServers) {
+                    if (token.isCancellationRequested) { break; }
+                    progress.report({ message: `MCP: ${server.name}...`, increment });
+
+                    try {
+                        const existing = await readMcpJson(this.workspaceUri);
+                        const updated = removeServerFromConfig(existing, server.name);
+                        await writeMcpJson(this.workspaceUri, updated);
+                        manifest = removeMcpRecord(manifest, server.name);
+                        result.imported.push(`MCP:${server.name}`);
+                    } catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        result.failed.push({ name: `MCP:${server.name}`, error: msg });
+                    }
+                }
+            }
+        );
+
+        await saveManifest(this.workspaceUri, manifest);
+
+        if (generateRegistry) {
+            await this.updateRegistry(manifest);
+        }
+
+        if (result.failed.length === 0) {
+            vscode.window.showInformationMessage(
+                `Removed ${result.imported.length} item(s) from project.`
+            );
+        } else {
+            vscode.window.showWarningMessage(
+                `Removed ${result.imported.length}, ${result.failed.length} failed: ${result.failed.map(f => f.name).join(', ')}`
+            );
+        }
+
+        return result;
+    }
+
     async embedSkill(skillName: string): Promise<void> {
         let manifest = await loadManifest(this.workspaceUri);
         if (!isSkillImported(manifest, skillName)) {
@@ -325,6 +421,10 @@ export class ImportService {
 
     setPlugins(plugins: PluginInfo[]) {
         this.allPlugins = plugins;
+    }
+
+    getPluginsByMarketplace(marketplace: string): PluginInfo[] {
+        return this.allPlugins.filter(p => p.marketplace === marketplace);
     }
 
     async importMcpServer(server: McpServerInfo): Promise<void> {

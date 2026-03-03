@@ -155,6 +155,8 @@ export async function activate(context: vscode.ExtensionContext) {
             'copilotSkillBridge.removeMcpServer',
             'copilotSkillBridge.embedSkill',
             'copilotSkillBridge.unembedSkill',
+            'copilotSkillBridge.removeAllSkills',
+            'copilotSkillBridge.removeAllFromMarketplace',
         ];
         for (const cmd of workspaceCommands) {
             context.subscriptions.push(
@@ -328,6 +330,41 @@ export async function activate(context: vscode.ExtensionContext) {
                 }
                 await refreshAll();
             }
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.removeAllSkills', async (item?: SkillTreeItem) => {
+            const plugin = item?.pluginInfo;
+            if (!plugin) {
+                vscode.window.showWarningMessage('Select a plugin from the Copilot Skill Bridge sidebar.');
+                return;
+            }
+            const { generateRegistry } = getConfig();
+            try {
+                await importService.removeAllSkills(plugin.skills, generateRegistry, plugin.mcpServers);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Remove All failed: ${msg}`);
+            }
+            await refreshAll();
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.removeAllFromMarketplace', async (item?: SkillTreeItem) => {
+            const repo = item?.marketplaceRepo;
+            if (!repo) {
+                vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
+                return;
+            }
+            const plugins = importService.getPluginsByMarketplace(repo);
+            const allSkills = plugins.flatMap(p => p.skills);
+            const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
+            const { generateRegistry } = getConfig();
+            try {
+                await importService.removeAllSkills(allSkills, generateRegistry, allMcpServers);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Remove All failed: ${msg}`);
+            }
+            await refreshAll();
         }),
     );
 

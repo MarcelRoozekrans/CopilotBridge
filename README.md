@@ -67,6 +67,8 @@ When only `prompts` is selected, the full converted skill content is embedded di
 | `copilotSkillBridge.openSourceRepo` | Open Source Repository | Open the marketplace or plugin repository on GitHub |
 | `copilotSkillBridge.embedSkill` | Embed in Instructions | Make a skill always active via an instructions file |
 | `copilotSkillBridge.unembedSkill` | Unembed from Instructions | Remove the always-active instructions file for a skill |
+| `copilotSkillBridge.removeAllSkills` | Remove All from Project | Remove all imported skills and MCP servers from a plugin |
+| `copilotSkillBridge.removeAllFromMarketplace` | Remove All from Project | Remove all imported skills and MCP servers from a marketplace |
 
 ## How It Works
 
