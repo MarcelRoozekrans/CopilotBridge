@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.5.0...copilot-skill-bridge-v0.6.0) (2026-03-03)
+
+
+### Features
+
+* smart skill conversion with compatibility analysis ([#17](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/17)) ([168b95a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/168b95ab1f710303f42ef8ee8148d1a2d16eb5e7))
+
 ## [0.5.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.4.2...copilot-skill-bridge-v0.5.0) (2026-03-02)
 
 

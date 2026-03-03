@@ -2,7 +2,7 @@
   "name": "copilot-skill-bridge",
   "displayName": "Copilot Skill Bridge",
   "description": "Bridge Claude Code marketplace skills into GitHub Copilot",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "MarcelRoozekrans",
   "license": "MIT",
   "repository": {
