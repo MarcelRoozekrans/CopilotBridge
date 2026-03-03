@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.7.0...copilot-skill-bridge-v0.8.0) (2026-03-03)
+
+
+### Features
+
+* show skill content on click in tree view ([#22](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/22)) ([656a548](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/656a548987dc7e4d73d2563fc6f14bc8024d7e5c))
+
 ## [0.7.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.6.0...copilot-skill-bridge-v0.7.0) (2026-03-03)
 
 
