@@ -13,7 +13,9 @@ const skillContentStore = new Map<string, string>();
 
 class SkillContentProvider implements vscode.TextDocumentContentProvider {
     provideTextDocumentContent(uri: vscode.Uri): string {
-        return skillContentStore.get(uri.path) ?? '';
+        // Strip .md extension added for language detection
+        const key = uri.path.replace(/\.md$/, '');
+        return skillContentStore.get(key) ?? '';
     }
 }
 
