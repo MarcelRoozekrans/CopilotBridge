@@ -182,7 +182,15 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
                 status = 'synced';
             }
 
-            children.push(new SkillTreeItem(skill.name, 'skill', plugin, skill, status));
+            const item = new SkillTreeItem(skill.name, 'skill', plugin, skill, status);
+
+            if (status === 'synced' && this.manifest.skills[skill.name]?.embedded) {
+                item.iconPath = new vscode.ThemeIcon('pin', new vscode.ThemeColor('testing.iconPassed'));
+                item.description = 'always active';
+                item.contextValue = 'skill-synced-embedded';
+            }
+
+            children.push(item);
         }
 
         const mcpServers = plugin.mcpServers ?? [];

@@ -395,3 +395,83 @@ describe('TreeView incompatible skills', () => {
         assert.ok(skill!.contextValue !== 'skill-incompatible', 'Should be compatible — MCP server available');
     });
 });
+
+describe('TreeView embedded skills', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should show pin icon and always active description for embedded synced skills', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'memory',
+                description: 'Memory skill',
+                content: 'Use search_memory.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        const hash = require('crypto').createHash('sha256').update('Use search_memory.').digest('hex').slice(0, 12);
+        const manifest = makeManifest({
+            skills: {
+                'memory': {
+                    source: 'test@test',
+                    sourceHash: hash,
+                    importedHash: hash,
+                    importedAt: '2026-01-01',
+                    locallyModified: false,
+                    embedded: true,
+                },
+            },
+        });
+        provider.setData([plugin], manifest);
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.strictEqual(skill!.contextValue, 'skill-synced-embedded');
+        assert.strictEqual(skill!.description, 'always active');
+    });
+
+    it('should show normal synced for non-embedded skills', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'tdd',
+                description: 'TDD',
+                content: 'Write tests first.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        const hash = require('crypto').createHash('sha256').update('Write tests first.').digest('hex').slice(0, 12);
+        const manifest = makeManifest({
+            skills: {
+                'tdd': {
+                    source: 'test@test',
+                    sourceHash: hash,
+                    importedHash: hash,
+                    importedAt: '2026-01-01',
+                    locallyModified: false,
+                    embedded: false,
+                },
+            },
+        });
+        provider.setData([plugin], manifest);
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.strictEqual(skill!.contextValue, 'skill-synced');
+        assert.strictEqual(skill!.description, 'synced');
+    });
+});

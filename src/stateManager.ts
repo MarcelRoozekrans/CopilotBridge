@@ -54,6 +54,7 @@ export function recordImport(
     source: string,
     contentHash: string
 ): BridgeManifest {
+    const existing = manifest.skills[skillName];
     return {
         ...manifest,
         skills: {
@@ -64,9 +65,26 @@ export function recordImport(
                 importedHash: contentHash,
                 importedAt: new Date().toISOString(),
                 locallyModified: false,
+                embedded: existing?.embedded ?? false,
             },
         },
     };
+}
+
+export function setSkillEmbedded(manifest: BridgeManifest, skillName: string, embedded: boolean): BridgeManifest {
+    const state = manifest.skills[skillName];
+    if (!state) { return manifest; }
+    return {
+        ...manifest,
+        skills: {
+            ...manifest.skills,
+            [skillName]: { ...state, embedded },
+        },
+    };
+}
+
+export function isSkillEmbedded(manifest: BridgeManifest, skillName: string): boolean {
+    return manifest.skills[skillName]?.embedded ?? false;
 }
 
 export function removeSkillRecord(manifest: BridgeManifest, skillName: string): BridgeManifest {

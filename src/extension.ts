@@ -3,8 +3,6 @@ import { SkillBridgeTreeProvider, SkillTreeItem } from './treeView';
 import { ImportService } from './importService';
 import { UpdateWatcher } from './updateWatcher';
 import { loadManifest } from './stateManager';
-import { generateRegistryEntry } from './converter';
-import { updateCopilotInstructions } from './fileWriter';
 
 let updateWatcher: UpdateWatcher | undefined;
 
@@ -155,6 +153,8 @@ export async function activate(context: vscode.ExtensionContext) {
             'copilotSkillBridge.importMcpServer',
             'copilotSkillBridge.importAllMcpServers',
             'copilotSkillBridge.removeMcpServer',
+            'copilotSkillBridge.embedSkill',
+            'copilotSkillBridge.unembedSkill',
         ];
         for (const cmd of workspaceCommands) {
             context.subscriptions.push(
@@ -257,15 +257,35 @@ export async function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('copilotSkillBridge.rebuildRegistry', async () => {
             try {
-                const manifest = await loadManifest(workspaceUri);
-                const entries = Object.keys(manifest.skills).map(name => {
-                    return generateRegistryEntry(name, '');
-                });
-                await updateCopilotInstructions(workspaceUri, entries);
+                await importService.rebuildRegistry();
                 vscode.window.showInformationMessage('Skill registry rebuilt.');
             } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 vscode.window.showErrorMessage(`Rebuild registry failed: ${msg}`);
+            }
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.embedSkill', async (item?: SkillTreeItem) => {
+            if (item?.skillInfo) {
+                try {
+                    await importService.embedSkill(item.skillInfo.name);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Embed failed for "${item.skillInfo.name}": ${msg}`);
+                }
+                await refreshAll();
+            }
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.unembedSkill', async (item?: SkillTreeItem) => {
+            if (item?.skillInfo) {
+                try {
+                    await importService.unembedSkill(item.skillInfo.name);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Unembed failed for "${item.skillInfo.name}": ${msg}`);
+                }
+                await refreshAll();
             }
         }),
 

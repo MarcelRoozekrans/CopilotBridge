@@ -80,8 +80,8 @@ export async function updateCopilotInstructions(
         // File doesn't exist yet
     }
 
-    const registry = buildRegistryTable(entries);
-    const merged = mergeRegistryIntoInstructions(existing, registry);
+    const section = buildRegistryTable(entries);
+    const merged = mergeRegistryIntoInstructions(existing, section);
     await vscode.workspace.fs.writeFile(instructionsUri, Buffer.from(merged, 'utf-8'));
 }
 

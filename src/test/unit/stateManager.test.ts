@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { createEmptyManifest, computeHash, isSkillImported, isSkillOutdated, recordImport, removeSkillRecord, isMcpServerImported, recordMcpImport, removeMcpRecord } from '../../stateManager';
+import { createEmptyManifest, computeHash, isSkillImported, isSkillOutdated, recordImport, removeSkillRecord, isMcpServerImported, recordMcpImport, removeMcpRecord, setSkillEmbedded, isSkillEmbedded } from '../../stateManager';
 import { BridgeManifest } from '../../types';
 
 describe('createEmptyManifest', () => {
@@ -173,5 +173,73 @@ describe('removeMcpRecord', () => {
         const updated = removeMcpRecord(m, 'context7');
         assert.ok(m.mcpServers['context7']);
         assert.strictEqual(updated.mcpServers['context7'], undefined);
+    });
+});
+
+describe('setSkillEmbedded', () => {
+    it('should set embedded flag on an existing skill', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash');
+        const updated = setSkillEmbedded(m, 'memory', true);
+        assert.strictEqual(updated.skills['memory'].embedded, true);
+    });
+
+    it('should clear embedded flag', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash');
+        m = setSkillEmbedded(m, 'memory', true);
+        const updated = setSkillEmbedded(m, 'memory', false);
+        assert.strictEqual(updated.skills['memory'].embedded, false);
+    });
+
+    it('should return manifest unchanged for non-existent skill', () => {
+        const m = createEmptyManifest();
+        const updated = setSkillEmbedded(m, 'nonexistent', true);
+        assert.deepStrictEqual(updated, m);
+    });
+
+    it('should not mutate original manifest', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash');
+        const updated = setSkillEmbedded(m, 'memory', true);
+        assert.strictEqual(m.skills['memory'].embedded, false);
+        assert.strictEqual(updated.skills['memory'].embedded, true);
+    });
+});
+
+describe('isSkillEmbedded', () => {
+    it('should return true for embedded skill', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash');
+        m = setSkillEmbedded(m, 'memory', true);
+        assert.strictEqual(isSkillEmbedded(m, 'memory'), true);
+    });
+
+    it('should return false for non-embedded skill', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash');
+        assert.strictEqual(isSkillEmbedded(m, 'memory'), false);
+    });
+
+    it('should return false for non-existent skill', () => {
+        const m = createEmptyManifest();
+        assert.strictEqual(isSkillEmbedded(m, 'unknown'), false);
+    });
+});
+
+describe('recordImport preserves embedded', () => {
+    it('should preserve embedded flag on re-import', () => {
+        let m = createEmptyManifest();
+        m = recordImport(m, 'memory', 'src', 'hash1');
+        m = setSkillEmbedded(m, 'memory', true);
+        m = recordImport(m, 'memory', 'src', 'hash2');
+        assert.strictEqual(m.skills['memory'].embedded, true);
+        assert.strictEqual(m.skills['memory'].importedHash, 'hash2');
+    });
+
+    it('should default embedded to false for new imports', () => {
+        const m = createEmptyManifest();
+        const updated = recordImport(m, 'new-skill', 'src', 'hash');
+        assert.strictEqual(updated.skills['new-skill'].embedded, false);
     });
 });

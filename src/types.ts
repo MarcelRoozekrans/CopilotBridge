@@ -59,6 +59,7 @@ export interface SkillImportState {
     importedHash: string;
     importedAt: string;
     locallyModified: boolean;
+    embedded?: boolean;
 }
 
 export interface BridgeManifest {
