@@ -75,6 +75,54 @@ describe('ImportService.convertSkill', () => {
     });
 });
 
+describe('ImportService.writeSkillFiles prompt format', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let writtenFiles: Array<{ path: string; content: string }>;
+    let origWriteFile: any;
+    let origShowInfo: any;
+
+    before(() => {
+        origWriteFile = vscode.workspace.fs.writeFile;
+        origShowInfo = vscode.window.showInformationMessage;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        writtenFiles = [];
+        vscode.workspace.fs.writeFile = async (uri: any, content: Buffer) => {
+            writtenFiles.push({ path: uri.fsPath, content: content.toString('utf-8') });
+        };
+    });
+
+    afterEach(() => {
+        vscode.workspace.fs.writeFile = origWriteFile;
+        vscode.window.showInformationMessage = origShowInfo;
+    });
+
+    it('should write full-content prompt file when format is prompts', async () => {
+        const skill = makeSkill();
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([skill], ['prompts'], false);
+
+        const promptFile = writtenFiles.find(f => f.path.includes('.prompt.md'));
+        assert.ok(promptFile, 'Should have written a prompt file');
+        assert.ok(promptFile!.content.includes('agent: agent'), 'Prompt should have agent frontmatter');
+        assert.ok(promptFile!.content.length > 100, 'Prompt should contain full body, not just a pointer');
+    });
+
+    it('should write pointer prompt when format includes instructions', async () => {
+        const skill = makeSkill();
+        vscode.window.showInformationMessage = async () => 'Import All';
+        await service.importAllSkills([skill], ['instructions', 'prompts'], false);
+
+        const promptFile = writtenFiles.find(f => f.path.includes('.prompt.md'));
+        assert.ok(promptFile, 'Should have written a prompt file');
+        assert.ok(promptFile!.content.includes('Follow the instructions in'), 'Should be a pointer when instructions also generated');
+    });
+});
+
 describe('ImportService MCP methods', () => {
     const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
     let service: ImportService;

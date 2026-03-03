@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult } from './types';
-import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateRegistryEntry } from './converter';
+import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry } from './converter';
 import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles } from './fileWriter';
@@ -189,7 +189,11 @@ export class ImportService {
             await writeInstructionsFile(this.workspaceUri, skill.name, conversion.instructionsContent);
         }
         if (outputFormats.includes('prompts')) {
-            await writePromptFile(this.workspaceUri, skill.name, conversion.promptContent);
+            const promptsOnly = !outputFormats.includes('instructions');
+            const promptContent = promptsOnly
+                ? generateFullPromptFile(skill.name, skill.description, conversion.instructionsContent)
+                : conversion.promptContent;
+            await writePromptFile(this.workspaceUri, skill.name, promptContent);
         }
 
         let manifest = await loadManifest(this.workspaceUri);
