@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.9.0...copilot-skill-bridge-v0.10.0) (2026-03-03)
+
+
+### Features
+
+* convert MCP tool references and fix cross-reference format ([#27](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/27)) ([f908b1a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/f908b1a7058a0cd92499784b8b61e36485bfac96))
+
 ## [0.9.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.8.0...copilot-skill-bridge-v0.9.0) (2026-03-03)
 
 
