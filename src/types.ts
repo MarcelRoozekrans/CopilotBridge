@@ -72,6 +72,7 @@ export interface BridgeManifest {
 }
 
 export interface ConversionResult {
+    convertedBody: string;
     instructionsContent: string;
     promptContent: string;
     registryEntry: { name: string; trigger: string; file: string };

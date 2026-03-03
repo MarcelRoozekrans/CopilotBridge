@@ -108,13 +108,24 @@
           "group": "inline"
         },
         {
+          "command": "copilotSkillBridge.importSkill",
+          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(available|update-available)/",
+          "group": "1_actions"
+        },
+        {
           "command": "copilotSkillBridge.removeSkill",
           "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(synced|conflict)/",
           "group": "inline"
         },
         {
+          "command": "copilotSkillBridge.removeSkill",
+          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(synced|conflict)/",
+          "group": "1_actions"
+        },
+        {
           "command": "copilotSkillBridge.importAllSkills",
-          "when": "view == skillBridgeExplorer && viewItem == plugin"
+          "when": "view == skillBridgeExplorer && viewItem == plugin",
+          "group": "1_actions"
         },
         {
           "command": "copilotSkillBridge.importMcpServer",
@@ -122,13 +133,24 @@
           "group": "inline"
         },
         {
+          "command": "copilotSkillBridge.importMcpServer",
+          "when": "view == skillBridgeExplorer && viewItem == mcpServer-available",
+          "group": "1_actions"
+        },
+        {
           "command": "copilotSkillBridge.removeMcpServer",
           "when": "view == skillBridgeExplorer && viewItem == mcpServer-synced",
           "group": "inline"
         },
         {
+          "command": "copilotSkillBridge.removeMcpServer",
+          "when": "view == skillBridgeExplorer && viewItem == mcpServer-synced",
+          "group": "1_actions"
+        },
+        {
           "command": "copilotSkillBridge.importAllMcpServers",
-          "when": "view == skillBridgeExplorer && viewItem == mcpGroup"
+          "when": "view == skillBridgeExplorer && viewItem == mcpGroup",
+          "group": "1_actions"
         }
       ],
       "view/title": [

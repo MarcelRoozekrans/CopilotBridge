@@ -23,14 +23,17 @@ export class SkillTreeItem extends vscode.TreeItem {
             this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
             this.iconPath = new vscode.ThemeIcon('repo');
             this.contextValue = 'marketplace';
+            this.tooltip = `Marketplace: ${marketplaceRepo ?? label}`;
         } else if (itemType === 'plugin') {
             this.collapsibleState = vscode.TreeItemCollapsibleState.Expanded;
             this.iconPath = new vscode.ThemeIcon('package');
             const src = pluginInfo?.source === 'local' ? 'local' : pluginInfo?.source === 'remote' ? 'remote' : 'local + remote';
             this.description = `v${pluginInfo?.version ?? '?'} [${src}]`;
             this.contextValue = 'plugin';
+            this.tooltip = pluginInfo?.description ?? label;
         } else if (itemType === 'skill') {
             this.contextValue = `skill-${status}`;
+            this.tooltip = skillInfo?.description ?? label;
             switch (status) {
                 case 'synced':
                     this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));
@@ -56,8 +59,13 @@ export class SkillTreeItem extends vscode.TreeItem {
             this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
             this.iconPath = new vscode.ThemeIcon('plug');
             this.contextValue = 'mcpGroup';
+            this.tooltip = 'MCP servers provided by this plugin';
         } else if (itemType === 'mcpServer') {
             this.contextValue = `mcpServer-${status}`;
+            const serverDetail = mcpServerInfo?.config.command
+                ? `Command: ${mcpServerInfo.config.command} ${(mcpServerInfo.config.args ?? []).join(' ')}`.trim()
+                : mcpServerInfo?.config.url ?? '';
+            this.tooltip = serverDetail || label;
             if (status === 'synced') {
                 this.iconPath = new vscode.ThemeIcon('check', new vscode.ThemeColor('testing.iconPassed'));
                 this.description = 'imported';

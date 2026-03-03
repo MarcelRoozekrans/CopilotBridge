@@ -203,6 +203,77 @@ describe('TreeView MCP support', () => {
     });
 });
 
+describe('TreeView tooltips', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should show skill description as tooltip', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'tdd',
+                description: 'Write tests before implementation code',
+                content: 'TDD content here.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.strictEqual(skill!.tooltip, 'Write tests before implementation code');
+    });
+
+    it('should show plugin description as tooltip', () => {
+        const plugin = makePlugin({
+            description: 'A collection of developer skills',
+            marketplace: 'test',
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        assert.strictEqual(pluginItem.tooltip, 'A collection of developer skills');
+    });
+
+    it('should show marketplace repo as tooltip', () => {
+        const plugins = [
+            makePlugin({ name: 'a', marketplace: 'user/repo' }),
+            makePlugin({ name: 'b', marketplace: 'user/repo' }),
+        ];
+        provider.setData(plugins, makeManifest());
+
+        const marketplace = provider.getChildren(undefined)[0];
+        assert.strictEqual(marketplace.tooltip, 'Marketplace: user/repo');
+    });
+
+    it('should show MCP server command as tooltip', () => {
+        const plugin = makePlugin({
+            marketplace: 'test',
+            mcpServers: [{
+                name: 'context7',
+                config: { command: 'npx', args: ['-y', '@upstash/context7-mcp'] },
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const mcpGroup = provider.getChildren(pluginItem).find(c => c.itemType === 'mcpGroup')!;
+        const servers = provider.getChildren(mcpGroup);
+        assert.strictEqual(servers[0].tooltip, 'Command: npx -y @upstash/context7-mcp');
+    });
+});
+
 describe('TreeView incompatible skills', () => {
     let provider: SkillBridgeTreeProvider;
 
