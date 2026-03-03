@@ -54,42 +54,20 @@ describe('analyzeCompatibility', () => {
         assert.ok(result.issues.some(i => i.includes('Meta-orchestrator')));
     });
 
-    it('should detect memory tool dependency', () => {
+    it('should track memory tools as informational dependencies without blocking', () => {
         const skill = makeSkill('Use search_memory to find previous context. Use save_memory to store.');
         const result = analyzeCompatibility(skill, [], {}, {});
-        assert.strictEqual(result.compatible, false);
+        assert.strictEqual(result.compatible, true);
+        assert.strictEqual(result.issues.length, 0);
         assert.ok(result.mcpDependencies.length > 0);
     });
 
-    it('should resolve memory dependency when plugin has MCP server', () => {
-        const skill = makeSkill('Use search_memory to find context.');
-        const pluginMcp = [makeMcpServer('memory-server')];
-        const result = analyzeCompatibility(skill, pluginMcp, {}, {});
-        assert.strictEqual(result.compatible, true);
-        assert.strictEqual(result.issues.length, 0);
-    });
-
-    it('should resolve memory dependency when MCP server already imported', () => {
-        const skill = makeSkill('Use save_memory to store context.');
-        const imported: Record<string, McpServerRecord> = {
-            'memory-server': { source: 'test@test', importedAt: '2026-01-01' },
-        };
-        const result = analyzeCompatibility(skill, [], imported, {});
-        assert.strictEqual(result.compatible, true);
-    });
-
-    it('should resolve memory dependency when system MCP server exists', () => {
-        const skill = makeSkill('Use search_memory to recall.');
-        const systemServers = { 'my-memory': { command: 'npx', args: ['-y', 'memory-server'] } };
-        const result = analyzeCompatibility(skill, [], {}, systemServers);
-        assert.strictEqual(result.compatible, true);
-    });
-
-    it('should remain incompatible when sub-agent + unresolved MCP', () => {
+    it('should remain incompatible only for sub-agent pattern even with memory tools', () => {
         const skill = makeSkill('Dispatch subtask. Use search_memory.');
         const result = analyzeCompatibility(skill, [], {}, {});
         assert.strictEqual(result.compatible, false);
-        assert.ok(result.issues.length >= 1);
+        assert.ok(result.issues.some(i => i.includes('sub-agent')));
+        assert.ok(result.mcpDependencies.length > 0);
     });
 
     it('should handle multiple blocking patterns', () => {
