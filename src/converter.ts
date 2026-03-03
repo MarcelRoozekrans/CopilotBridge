@@ -17,6 +17,7 @@ const CONVERSION_RULES: Array<{ pattern: RegExp; replacement: string }> = [
     { pattern: /\bWrite tool\b/gi, replacement: 'file writing' },
     { pattern: /\bGrep\b(?!\s*\()/g, replacement: 'code search' },
     { pattern: /\bGlob\b(?!\s*\()/g, replacement: 'file search' },
+    { pattern: /\bAskUserQuestion\b/g, replacement: 'ask the user' },
 
     // Plan mode
     { pattern: /\bEnterPlanMode\b/g, replacement: 'present your plan to the user for approval' },

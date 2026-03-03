@@ -17,7 +17,6 @@ const BLOCKING_PATTERNS: BlockingPattern[] = [
     { pattern: /spawn\w*\s+\w*agent/i, reason: 'Requires sub-agent dispatch', mcpResolvable: false },
     { pattern: /parallel\s+agents?/i, reason: 'Requires parallel agent architecture', mcpResolvable: false },
     { pattern: /launch\s+.*agents?\s+.*(?:independent|parallel|concurrent)/i, reason: 'Requires parallel agent architecture', mcpResolvable: false },
-    { pattern: /\bAskUserQuestion\b/, reason: 'Requires AskUserQuestion tool (no Copilot equivalent)', mcpResolvable: false },
     { pattern: /check\s+skills?\s+before\s+every\s+response/i, reason: 'Meta-orchestrator pattern (no Copilot equivalent)', mcpResolvable: false },
     { pattern: /invoke.*skill.*before.*any.*response/i, reason: 'Meta-orchestrator pattern (no Copilot equivalent)', mcpResolvable: false },
     { pattern: /\bsearch_memory\b/, reason: 'Requires MCP memory server', mcpResolvable: true },

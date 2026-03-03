@@ -40,11 +40,11 @@ describe('analyzeCompatibility', () => {
         assert.strictEqual(result.compatible, false);
     });
 
-    it('should detect AskUserQuestion pattern', () => {
+    it('should treat AskUserQuestion as compatible (converted, not blocked)', () => {
         const skill = makeSkill('Use AskUserQuestion to get user preference.');
         const result = analyzeCompatibility(skill, [], {}, {});
-        assert.strictEqual(result.compatible, false);
-        assert.ok(result.issues.some(i => i.includes('AskUserQuestion')));
+        assert.strictEqual(result.compatible, true);
+        assert.strictEqual(result.issues.length, 0);
     });
 
     it('should detect meta-orchestrator pattern', () => {
@@ -93,7 +93,7 @@ describe('analyzeCompatibility', () => {
     });
 
     it('should handle multiple blocking patterns', () => {
-        const skill = makeSkill('Dispatch subtask. Use AskUserQuestion. Check skills before every response.');
+        const skill = makeSkill('Dispatch subtask. Check skills before every response.');
         const result = analyzeCompatibility(skill, [], {}, {});
         assert.strictEqual(result.compatible, false);
         assert.ok(result.issues.length >= 2);
