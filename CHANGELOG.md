@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.10.1...copilot-skill-bridge-v0.11.0) (2026-03-03)
+
+
+### Features
+
+* embed skill content in copilot-instructions.md ([#31](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/31)) ([5e78e59](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/5e78e59d9e3cc8f1d549eb276e4cfe4f222b2784))
+
 ## [0.10.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.10.0...copilot-skill-bridge-v0.10.1) (2026-03-03)
 
 
