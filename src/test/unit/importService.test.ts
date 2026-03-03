@@ -25,10 +25,18 @@ describe('ImportService.convertSkill', () => {
 
     it('should return a ConversionResult with all required fields', () => {
         const result = service.convertSkill(makeSkill());
+        assert.ok(result.convertedBody);
         assert.ok(result.instructionsContent);
         assert.ok(result.promptContent);
         assert.ok(result.registryEntry);
         assert.ok(result.originalContent);
+    });
+
+    it('should store convertedBody without frontmatter wrapping', () => {
+        const result = service.convertSkill(makeSkill());
+        assert.ok(!result.convertedBody.includes('applyTo:'), 'convertedBody should not contain instructions frontmatter');
+        assert.ok(!result.convertedBody.startsWith('---'), 'convertedBody should not start with frontmatter delimiter');
+        assert.ok(result.convertedBody.includes('checklist'), 'convertedBody should contain converted content');
     });
 
     it('should apply conversion rules to the instructions content', () => {
@@ -109,7 +117,12 @@ describe('ImportService.writeSkillFiles prompt format', () => {
         const promptFile = writtenFiles.find(f => f.path.includes('.prompt.md'));
         assert.ok(promptFile, 'Should have written a prompt file');
         assert.ok(promptFile!.content.includes('agent: agent'), 'Prompt should have agent frontmatter');
-        assert.ok(promptFile!.content.length > 100, 'Prompt should contain full body, not just a pointer');
+        assert.ok(promptFile!.content.includes('checklist'), 'Prompt should contain converted body');
+        assert.ok(!promptFile!.content.includes('applyTo:'), 'Prompt should not contain instructions frontmatter (no double frontmatter)');
+
+        // Verify only one frontmatter block (exactly 2 '---' delimiters)
+        const delimiterCount = (promptFile!.content.match(/^---$/gm) || []).length;
+        assert.strictEqual(delimiterCount, 2, `Should have exactly one frontmatter block (2 delimiters), got ${delimiterCount}`);
     });
 
     it('should write pointer prompt when format includes instructions', async () => {

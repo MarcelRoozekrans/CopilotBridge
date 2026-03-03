@@ -73,6 +73,7 @@ export class ImportService {
         const convertedBody = convertSkillContent(parsed.body);
 
         return {
+            convertedBody,
             instructionsContent: generateInstructionsFile(skill.name, skill.description, convertedBody),
             promptContent: generatePromptFile(skill.name, skill.description),
             registryEntry: generateRegistryEntry(skill.name, skill.description),
@@ -217,7 +218,7 @@ export class ImportService {
         if (outputFormats.includes('prompts')) {
             const promptsOnly = !outputFormats.includes('instructions');
             const promptContent = promptsOnly
-                ? generateFullPromptFile(skill.name, skill.description, conversion.instructionsContent)
+                ? generateFullPromptFile(skill.name, skill.description, conversion.convertedBody)
                 : conversion.promptContent;
             await writePromptFile(this.workspaceUri, skill.name, promptContent);
         }
