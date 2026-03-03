@@ -1,4 +1,4 @@
-export type SkillStatus = 'synced' | 'available' | 'update-available' | 'conflict';
+export type SkillStatus = 'synced' | 'available' | 'update-available' | 'conflict' | 'incompatible';
 
 export type SkillSource = 'local' | 'remote' | 'both';
 
