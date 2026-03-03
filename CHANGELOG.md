@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.11.0...copilot-skill-bridge-v0.11.1) (2026-03-03)
+
+
+### Documentation
+
+* update README with embed, preview, and source repo features ([#33](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/33)) ([f2028fd](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/f2028fdc0cca194a2c20cdae98fd6db735b0adc9))
+
 ## [0.11.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.10.1...copilot-skill-bridge-v0.11.0) (2026-03-03)
 
 
