@@ -406,3 +406,74 @@ describe('ImportService.importAllSkills', () => {
         assert.ok(confirmationMsg.includes('and 7 more'));
     });
 });
+
+describe('ImportService compatibility gate', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let warningMessages: string[];
+    let origShowWarning: any;
+    let origShowInfo: any;
+
+    before(() => {
+        origShowWarning = vscode.window.showWarningMessage;
+        origShowInfo = vscode.window.showInformationMessage;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        warningMessages = [];
+        vscode.window.showWarningMessage = async (msg: string) => {
+            warningMessages.push(msg);
+            return undefined;
+        };
+    });
+
+    afterEach(() => {
+        vscode.window.showWarningMessage = origShowWarning;
+        vscode.window.showInformationMessage = origShowInfo;
+    });
+
+    it('should block import of incompatible skill with warning', async () => {
+        const skill = makeSkill({
+            content: 'Dispatch a subtask for each file. Launch parallel agents.',
+        });
+        vscode.window.showInformationMessage = async () => 'Accept';
+        await service.importSkill(skill, ['prompts'], false);
+        assert.ok(warningMessages.length > 0, 'Should show warning');
+        assert.ok(warningMessages[0].includes('incompatible'), 'Warning should mention incompatible');
+    });
+
+    it('should allow import of compatible skill', async () => {
+        const skill = makeSkill({
+            content: '---\nname: tdd\ndescription: TDD\n---\nWrite tests first.',
+        });
+        vscode.window.showInformationMessage = async () => 'Accept';
+        await service.importSkill(skill, ['prompts'], false);
+        assert.strictEqual(warningMessages.length, 0, 'Should not show warning');
+    });
+
+    it('should skip incompatible skills in bulk import', async () => {
+        const compatible = makeSkill({ name: 'tdd', content: '---\nname: tdd\ndescription: TDD\n---\nWrite tests.' });
+        const incompatible = makeSkill({ name: 'parallel', content: 'Launch parallel agents to work.' });
+
+        const infoMessages: string[] = [];
+        vscode.window.showInformationMessage = async (msg: string) => {
+            infoMessages.push(msg);
+            return 'Import All';
+        };
+
+        const result = await service.importAllSkills([compatible, incompatible], ['prompts'], false);
+        assert.strictEqual(result.imported.length, 1);
+        assert.ok(result.imported.includes('tdd'));
+        const confirmMsg = infoMessages.find(m => m.includes('incompatible'));
+        assert.ok(confirmMsg, 'Should mention incompatible in confirmation: ' + JSON.stringify(infoMessages));
+        assert.ok(confirmMsg!.includes('1 incompatible'));
+    });
+
+    it('should return empty when all skills incompatible in bulk', async () => {
+        const skill = makeSkill({ content: 'Dispatch subtask. Launch parallel agents.' });
+        const result = await service.importAllSkills([skill], ['prompts'], false);
+        assert.strictEqual(result.imported.length, 0);
+    });
+});

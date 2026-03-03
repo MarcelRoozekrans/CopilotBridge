@@ -8,6 +8,7 @@ import { discoverLocalPlugins } from './localReader';
 import { discoverRemotePlugins } from './remoteReader';
 import { convertMcpServers } from './mcpConverter';
 import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
+import { analyzeCompatibility } from './compatAnalyzer';
 
 export class ImportService {
     private allPlugins: PluginInfo[] = [];
@@ -80,6 +81,14 @@ export class ImportService {
     }
 
     async importSkill(skill: SkillInfo, outputFormats: string[], generateRegistry: boolean): Promise<void> {
+        const compat = analyzeCompatibility(skill, [], {}, {});
+        if (!compat.compatible) {
+            vscode.window.showWarningMessage(
+                `Skill "${skill.name}" is incompatible with VS Code Copilot: ${compat.issues.join('; ')}`
+            );
+            return;
+        }
+
         const conversion = this.convertSkill(skill);
 
         const accepted = await this.showPreview(skill, conversion);
@@ -100,18 +109,35 @@ export class ImportService {
             return result;
         }
 
-        const conversions = skills.map(skill => ({
+        const compatResults = skills.map(skill => ({
+            skill,
+            compat: analyzeCompatibility(skill, [], {}, {}),
+        }));
+
+        const compatibleSkills = compatResults.filter(r => r.compat.compatible).map(r => r.skill);
+        const incompatibleCount = skills.length - compatibleSkills.length;
+
+        if (compatibleSkills.length === 0 && (!mcpServers || mcpServers.length === 0)) {
+            vscode.window.showWarningMessage(
+                `All ${skills.length} skill(s) are incompatible with VS Code Copilot.`
+            );
+            return result;
+        }
+
+        const conversions = compatibleSkills.map(skill => ({
             skill,
             conversion: this.convertSkill(skill),
         }));
 
-        const skillNames = skills.map(s => s.name);
-        const summary = skills.length <= 5
+        const skillNames = compatibleSkills.map(s => s.name);
+        const summary = compatibleSkills.length <= 5
             ? skillNames.join(', ')
-            : `${skillNames.slice(0, 3).join(', ')} and ${skills.length - 3} more`;
+            : `${skillNames.slice(0, 3).join(', ')} and ${compatibleSkills.length - 3} more`;
+
+        const incompatibleNote = incompatibleCount > 0 ? ` (${incompatibleCount} incompatible, skipped)` : '';
 
         const choice = await vscode.window.showInformationMessage(
-            `Import ${skills.length} skill(s): ${summary}?`,
+            `Import ${compatibleSkills.length} skill(s)${incompatibleNote}: ${summary}?`,
             { modal: true },
             'Import All',
             'Cancel'
@@ -128,7 +154,7 @@ export class ImportService {
                 cancellable: true,
             },
             async (progress, token) => {
-                const total = skills.length + (mcpServers?.length ?? 0);
+                const total = compatibleSkills.length + (mcpServers?.length ?? 0);
                 const increment = total > 0 ? 100 / total : 100;
 
                 for (const { skill, conversion } of conversions) {
