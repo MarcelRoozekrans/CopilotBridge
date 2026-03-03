@@ -2,7 +2,7 @@
   "name": "copilot-skill-bridge",
   "displayName": "Copilot Skill Bridge",
   "description": "Bridge Claude Code marketplace skills into GitHub Copilot",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "publisher": "MarcelRoozekrans",
   "license": "MIT",
   "repository": {
@@ -108,16 +108,6 @@
         "command": "copilotSkillBridge.openSourceRepo",
         "title": "Open Source Repository",
         "icon": "$(link-external)"
-      },
-      {
-        "command": "copilotSkillBridge.embedSkill",
-        "title": "Embed in Instructions",
-        "icon": "$(pin)"
-      },
-      {
-        "command": "copilotSkillBridge.unembedSkill",
-        "title": "Unembed from Instructions",
-        "icon": "$(pinned)"
       }
     ],
     "menus": {
@@ -173,24 +163,14 @@
           "group": "1_actions"
         },
         {
-          "command": "copilotSkillBridge.embedSkill",
-          "when": "view == skillBridgeExplorer && viewItem == skill-synced",
-          "group": "2_embed"
-        },
-        {
-          "command": "copilotSkillBridge.unembedSkill",
-          "when": "view == skillBridgeExplorer && viewItem == skill-synced-embedded",
-          "group": "2_embed"
-        },
-        {
           "command": "copilotSkillBridge.openSourceRepo",
           "when": "view == skillBridgeExplorer && viewItem == marketplace",
-          "group": "3_navigation"
+          "group": "2_navigation"
         },
         {
           "command": "copilotSkillBridge.openSourceRepo",
           "when": "view == skillBridgeExplorer && viewItem == plugin",
-          "group": "3_navigation"
+          "group": "2_navigation"
         }
       ],
       "view/title": [
