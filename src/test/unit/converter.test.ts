@@ -30,6 +30,13 @@ describe('convertSkillContent', () => {
         assert.ok(!result.includes('Grep'));
     });
 
+    it('should replace AskUserQuestion references', () => {
+        const input = 'Use AskUserQuestion to get user preferences.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('AskUserQuestion'));
+        assert.ok(result.includes('ask the user'));
+    });
+
     it('should replace EnterPlanMode/ExitPlanMode', () => {
         const input = 'Call EnterPlanMode to start planning. Then ExitPlanMode when done.';
         const result = convertSkillContent(input);

@@ -35,6 +35,13 @@ export async function activate(context: vscode.ExtensionContext) {
             const doc = await vscode.workspace.openTextDocument(uri);
             await vscode.window.showTextDocument(doc, { preview: true, preserveFocus: false });
         }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.openSourceRepo', async (item?: SkillTreeItem) => {
+            const repo = item?.marketplaceRepo ?? item?.pluginInfo?.marketplace;
+            if (repo && /^[\w.-]+\/[\w.-]+$/.test(repo)) {
+                await vscode.env.openExternal(vscode.Uri.parse(`https://github.com/${repo}`));
+            }
+        }),
         vscode.commands.registerCommand('copilotSkillBridge.login', async () => {
             const { loginToGitHub } = await import('./auth');
             const token = await loginToGitHub();

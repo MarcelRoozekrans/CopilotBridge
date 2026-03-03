@@ -103,6 +103,11 @@
         "command": "copilotSkillBridge.showSkillContent",
         "title": "Show Skill Content",
         "icon": "$(open-preview)"
+      },
+      {
+        "command": "copilotSkillBridge.openSourceRepo",
+        "title": "Open Source Repository",
+        "icon": "$(link-external)"
       }
     ],
     "menus": {
@@ -156,6 +161,16 @@
           "command": "copilotSkillBridge.importAllMcpServers",
           "when": "view == skillBridgeExplorer && viewItem == mcpGroup",
           "group": "1_actions"
+        },
+        {
+          "command": "copilotSkillBridge.openSourceRepo",
+          "when": "view == skillBridgeExplorer && viewItem == marketplace",
+          "group": "2_navigation"
+        },
+        {
+          "command": "copilotSkillBridge.openSourceRepo",
+          "when": "view == skillBridgeExplorer && viewItem == plugin",
+          "group": "2_navigation"
         }
       ],
       "view/title": [
