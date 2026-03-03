@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult } from './types';
-import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry } from './converter';
+import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry, OutputFormat } from './converter';
 import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles } from './fileWriter';
@@ -68,9 +68,9 @@ export class ImportService {
         return Array.from(merged.values());
     }
 
-    convertSkill(skill: SkillInfo): ConversionResult {
+    convertSkill(skill: SkillInfo, outputFormats?: OutputFormat[]): ConversionResult {
         const parsed = parseSkillFrontmatter(skill.content);
-        const convertedBody = convertSkillContent(parsed.body);
+        const convertedBody = convertSkillContent(parsed.body, outputFormats);
 
         return {
             convertedBody,
@@ -90,7 +90,7 @@ export class ImportService {
             return;
         }
 
-        const conversion = this.convertSkill(skill);
+        const conversion = this.convertSkill(skill, outputFormats as OutputFormat[]);
 
         const accepted = await this.showPreview(skill, conversion);
         if (!accepted) { return; }
@@ -127,7 +127,7 @@ export class ImportService {
 
         const conversions = compatibleSkills.map(skill => ({
             skill,
-            conversion: this.convertSkill(skill),
+            conversion: this.convertSkill(skill, outputFormats as OutputFormat[]),
         }));
 
         const skillNames = compatibleSkills.map(s => s.name);

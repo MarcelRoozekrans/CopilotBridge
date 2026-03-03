@@ -24,6 +24,8 @@ const BLOCKING_PATTERNS: BlockingPattern[] = [
 const MCP_DEPENDENCY_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
     { pattern: /\bsearch_memory\b/, reason: 'Uses MCP memory server' },
     { pattern: /\bsave_memory\b/, reason: 'Uses MCP memory server' },
+    { pattern: /\bupdate_memory\b/, reason: 'Uses MCP memory server' },
+    { pattern: /\bdelete_memory\b/, reason: 'Uses MCP memory server' },
 ];
 
 export function analyzeCompatibility(

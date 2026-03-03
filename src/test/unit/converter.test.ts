@@ -37,6 +37,35 @@ describe('convertSkillContent', () => {
         assert.ok(result.includes('ask the user'));
     });
 
+    it('should replace MCP memory tool references', () => {
+        const input = 'Call search_memory with a query. Then save_memory to persist. Use update_memory to revise. Use delete_memory to remove.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('search_memory'));
+        assert.ok(!result.includes('save_memory'));
+        assert.ok(!result.includes('update_memory'));
+        assert.ok(!result.includes('delete_memory'));
+        assert.ok(result.includes('search your memory'));
+        assert.ok(result.includes('save to memory'));
+        assert.ok(result.includes('update the memory'));
+        assert.ok(result.includes('delete the memory'));
+    });
+
+    it('should replace "your human partner" jargon', () => {
+        const input = 'Ask your human partner before proceeding.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('your human partner'));
+        assert.ok(result.includes('the user'));
+    });
+
+    it('should replace Claude Code references', () => {
+        const input = 'This is Claude Code-specific behavior. Use Claude Code to debug.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('Claude Code-specific'));
+        assert.ok(!result.includes('Claude Code'));
+        assert.ok(result.includes('AI assistant-specific'));
+        assert.ok(result.includes('the AI assistant'));
+    });
+
     it('should replace EnterPlanMode/ExitPlanMode', () => {
         const input = 'Call EnterPlanMode to start planning. Then ExitPlanMode when done.';
         const result = convertSkillContent(input);
@@ -57,10 +86,23 @@ describe('convertSkillContent', () => {
         assert.ok(!result.includes('~/.claude/'));
     });
 
-    it('should rewrite superpowers: skill cross-references', () => {
+    it('should rewrite superpowers: cross-references to instructions by default', () => {
         const input = 'Use superpowers:test-driven-development for TDD.';
         const result = convertSkillContent(input);
         assert.ok(result.includes('.github/instructions/test-driven-development.instructions.md'));
+    });
+
+    it('should rewrite superpowers: cross-references to prompts when prompts-only', () => {
+        const input = 'Use superpowers:test-driven-development for TDD.';
+        const result = convertSkillContent(input, ['prompts']);
+        assert.ok(result.includes('.github/prompts/test-driven-development.prompt.md'));
+        assert.ok(!result.includes('.instructions.md'));
+    });
+
+    it('should rewrite superpowers: cross-references to instructions when both formats', () => {
+        const input = 'Use superpowers:brainstorming first.';
+        const result = convertSkillContent(input, ['instructions', 'prompts']);
+        assert.ok(result.includes('.github/instructions/brainstorming.instructions.md'));
     });
 
     it('should preserve graphviz diagrams', () => {

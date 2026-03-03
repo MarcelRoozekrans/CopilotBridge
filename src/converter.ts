@@ -19,6 +19,12 @@ const CONVERSION_RULES: Array<{ pattern: RegExp; replacement: string }> = [
     { pattern: /\bGlob\b(?!\s*\()/g, replacement: 'file search' },
     { pattern: /\bAskUserQuestion\b/g, replacement: 'ask the user' },
 
+    // MCP memory tool references → natural language
+    { pattern: /\bsearch_memory\b/g, replacement: 'search your memory' },
+    { pattern: /\bsave_memory\b/g, replacement: 'save to memory' },
+    { pattern: /\bupdate_memory\b/g, replacement: 'update the memory' },
+    { pattern: /\bdelete_memory\b/g, replacement: 'delete the memory' },
+
     // Plan mode
     { pattern: /\bEnterPlanMode\b/g, replacement: 'present your plan to the user for approval' },
     { pattern: /\bExitPlanMode\b/g, replacement: 'finalize the plan and proceed' },
@@ -27,15 +33,28 @@ const CONVERSION_RULES: Array<{ pattern: RegExp; replacement: string }> = [
     { pattern: /\bCLAUDE\.md\b/g, replacement: '.github/copilot-instructions.md' },
     { pattern: /~\/\.claude\/[\w/.-]*/g, replacement: '[local config]' },
 
-    // Skill cross-references: superpowers:skill-name → file link
-    { pattern: /superpowers:([\w-]+)/g, replacement: '.github/instructions/$1.instructions.md' },
+    // Jargon
+    { pattern: /\byour human partner\b/gi, replacement: 'the user' },
+    { pattern: /\bClaude Code-specific\b/gi, replacement: 'AI assistant-specific' },
+    { pattern: /\bClaude Code\b/gi, replacement: 'the AI assistant' },
 ];
 
-export function convertSkillContent(content: string): string {
+export type OutputFormat = 'instructions' | 'prompts';
+
+export function convertSkillContent(content: string, outputFormats?: OutputFormat[]): string {
     let result = content;
     for (const rule of CONVERSION_RULES) {
         result = result.replace(rule.pattern, rule.replacement);
     }
+
+    // Cross-reference rewriting: adapt to output format
+    const usePrompts = outputFormats && !outputFormats.includes('instructions') && outputFormats.includes('prompts');
+    if (usePrompts) {
+        result = result.replace(/superpowers:([\w-]+)/g, '.github/prompts/$1.prompt.md');
+    } else {
+        result = result.replace(/superpowers:([\w-]+)/g, '.github/instructions/$1.instructions.md');
+    }
+
     return result;
 }
 

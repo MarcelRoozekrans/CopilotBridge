@@ -62,6 +62,13 @@ describe('analyzeCompatibility', () => {
         assert.ok(result.mcpDependencies.length > 0);
     });
 
+    it('should track update_memory and delete_memory as dependencies', () => {
+        const skill = makeSkill('Use update_memory to revise. Use delete_memory to remove.');
+        const result = analyzeCompatibility(skill, [], {}, {});
+        assert.strictEqual(result.compatible, true);
+        assert.strictEqual(result.mcpDependencies.length, 2);
+    });
+
     it('should remain incompatible only for sub-agent pattern even with memory tools', () => {
         const skill = makeSkill('Dispatch subtask. Use search_memory.');
         const result = analyzeCompatibility(skill, [], {}, {});
