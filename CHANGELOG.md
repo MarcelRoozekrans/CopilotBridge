@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.11.1...copilot-skill-bridge-v0.12.0) (2026-03-03)
+
+
+### Features
+
+* add bulk remove at plugin and marketplace level ([#35](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/35)) ([0c26c4a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/0c26c4ad746475f954ff80906a07ee9c83adec27))
+
 ## [0.11.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.11.0...copilot-skill-bridge-v0.11.1) (2026-03-03)
 
 
