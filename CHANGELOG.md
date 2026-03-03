@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.10.0...copilot-skill-bridge-v0.10.1) (2026-03-03)
+
+
+### Bug Fixes
+
+* skill preview showing empty content due to URI key mismatch ([#29](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/29)) ([34eb1b2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/34eb1b2c5de26dc1c98c5f11922b1aa6e247e8e2))
+
 ## [0.10.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.9.0...copilot-skill-bridge-v0.10.0) (2026-03-03)
 
 
