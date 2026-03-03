@@ -202,3 +202,87 @@ describe('TreeView MCP support', () => {
         assert.deepStrictEqual(servers[0].mcpServerInfo, serverInfo);
     });
 });
+
+describe('TreeView incompatible skills', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should mark skill as incompatible when it has blocking patterns', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'parallel-agents',
+                description: 'Dispatch parallel agents',
+                content: 'Launch parallel agents to handle work independently.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.ok(skill, 'Should have a skill child');
+        assert.strictEqual(skill!.contextValue, 'skill-incompatible');
+        assert.ok(skill!.description?.toString().length! > 0, 'Should have incompatible description');
+    });
+
+    it('should mark compatible skill normally', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'tdd',
+                description: 'Test driven development',
+                content: 'Write tests first, then implement.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.ok(skill, 'Should have a skill child');
+        assert.ok(skill!.contextValue !== 'skill-incompatible', 'Should not be incompatible');
+    });
+
+    it('should resolve MCP dependency when plugin has MCP servers', () => {
+        const plugin = makePlugin({
+            name: 'memory-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'long-term-memory',
+                description: 'Memory skill',
+                content: 'Use search_memory to find previous context.',
+                pluginName: 'memory-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+            mcpServers: [{
+                name: 'memory-server',
+                config: { command: 'npx' },
+                pluginName: 'memory-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.ok(skill!.contextValue !== 'skill-incompatible', 'Should be compatible — MCP server available');
+    });
+});

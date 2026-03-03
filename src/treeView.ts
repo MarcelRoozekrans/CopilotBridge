@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { SkillInfo, PluginInfo, SkillStatus, McpServerInfo } from './types';
 import { BridgeManifest } from './types';
 import { computeHash, isSkillImported, isSkillOutdated } from './stateManager';
+import { analyzeCompatibility } from './compatAnalyzer';
 
 export type TreeItemType = 'marketplace' | 'plugin' | 'skill' | 'mcpGroup' | 'mcpServer';
 
@@ -46,6 +47,9 @@ export class SkillTreeItem extends vscode.TreeItem {
                 case 'conflict':
                     this.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('list.errorForeground'));
                     this.description = 'conflict';
+                    break;
+                case 'incompatible':
+                    this.iconPath = new vscode.ThemeIcon('circle-slash', new vscode.ThemeColor('disabledForeground'));
                     break;
             }
         } else if (itemType === 'mcpGroup') {
@@ -139,8 +143,18 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
 
     private getPluginChildren(plugin: PluginInfo): SkillTreeItem[] {
         const children: SkillTreeItem[] = [];
+        const pluginMcpServers = plugin.mcpServers ?? [];
 
         for (const skill of plugin.skills) {
+            const compat = analyzeCompatibility(skill, pluginMcpServers, this.manifest.mcpServers ?? {}, {});
+
+            if (!compat.compatible) {
+                const item = new SkillTreeItem(skill.name, 'skill', plugin, skill, 'incompatible');
+                item.description = compat.issues[0] ?? 'incompatible';
+                children.push(item);
+                continue;
+            }
+
             const hash = computeHash(skill.content);
             let status: SkillStatus;
 
