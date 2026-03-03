@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.6.0...copilot-skill-bridge-v0.7.0) (2026-03-03)
+
+
+### Features
+
+* add tooltips and right-click context menus to tree view ([#19](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/19)) ([8b8cf62](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/8b8cf624a933a8c536affbe2440501f6719718af))
+
+
+### Documentation
+
+* update README with all current features ([#21](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/21)) ([f853a0a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/f853a0ac8ef5e012004fedf8ee68a5907eff138f))
+
 ## [0.6.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.5.0...copilot-skill-bridge-v0.6.0) (2026-03-03)
 
 
