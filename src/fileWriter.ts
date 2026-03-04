@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 
 interface RegistryEntry {
     name: string;
-    trigger: string;
     file: string;
 }
 
@@ -15,9 +14,9 @@ export function buildRegistryTable(entries: RegistryEntry[]): string {
     }
 
     const header = '## Available Skills\n\nWhen working on tasks, consult these skill files for guidance:\n\n';
-    const tableHeader = '| Skill | Trigger | File |\n|-------|---------|------|\n';
+    const tableHeader = '| Skill | File |\n|-------|------|\n';
     const rows = entries
-        .map(e => `| ${e.name} | ${e.trigger} | ${e.file} |`)
+        .map(e => `| ${e.name} | ${e.file} |`)
         .join('\n');
 
     return header + tableHeader + rows + '\n';
