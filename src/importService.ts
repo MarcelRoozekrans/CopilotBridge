@@ -140,8 +140,7 @@ export class ImportService {
         const choice = await vscode.window.showInformationMessage(
             `Import ${compatibleSkills.length} skill(s)${incompatibleNote}: ${summary}?`,
             { modal: true },
-            'Import All',
-            'Cancel'
+            'Import All'
         );
 
         if (choice !== 'Import All') {
@@ -274,8 +273,7 @@ export class ImportService {
         const choice = await vscode.window.showWarningMessage(
             `Remove ${parts.join(' and ')} from this project?`,
             { modal: true },
-            'Remove All',
-            'Cancel'
+            'Remove All'
         );
 
         if (choice !== 'Remove All') {
