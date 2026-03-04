@@ -246,9 +246,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('copilotSkillBridge.removeSkill', async (item?: SkillTreeItem) => {
             if (item?.skillInfo) {
-                const { generateRegistry } = getConfig();
+                const { generateRegistry, outputFormats } = getConfig();
                 try {
-                    await importService.removeSkill(item.skillInfo.name, generateRegistry);
+                    await importService.removeSkill(item.skillInfo.name, generateRegistry, outputFormats as import('./types').OutputFormat[]);
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
                     vscode.window.showErrorMessage(`Remove failed for "${item.skillInfo.name}": ${msg}`);

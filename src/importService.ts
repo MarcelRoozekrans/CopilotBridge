@@ -232,7 +232,7 @@ export class ImportService {
         }
     }
 
-    async removeSkill(skillName: string, generateRegistry: boolean): Promise<void> {
+    async removeSkill(skillName: string, generateRegistry: boolean, outputFormats?: OutputFormat[]): Promise<void> {
         await removeSkillFiles(this.workspaceUri, skillName);
 
         let manifest = await loadManifest(this.workspaceUri);
@@ -240,7 +240,7 @@ export class ImportService {
         await saveManifest(this.workspaceUri, manifest);
 
         if (generateRegistry) {
-            await this.updateRegistry(manifest);
+            await this.updateRegistry(manifest, outputFormats);
         }
 
         vscode.window.showInformationMessage(`Removed skill: ${skillName}`);
