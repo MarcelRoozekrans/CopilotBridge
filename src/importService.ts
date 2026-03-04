@@ -378,10 +378,12 @@ export class ImportService {
     }
 
     private async updateRegistry(manifest: import('./types').BridgeManifest, outputFormats?: OutputFormat[]): Promise<void> {
-        const entries = Object.keys(manifest.skills)
+        const allSkills = Object.keys(manifest.skills);
+        const entries = allSkills
             .filter(name => manifest.skills[name].embedded === true)
             .map(name => generateRegistryEntry(name, outputFormats));
-        await updateCopilotInstructions(this.workspaceUri, entries);
+        const hasPromptSkills = allSkills.length > entries.length;
+        await updateCopilotInstructions(this.workspaceUri, entries, hasPromptSkills);
     }
 
     private async showPreview(skill: SkillInfo, conversion: ConversionResult): Promise<boolean> {

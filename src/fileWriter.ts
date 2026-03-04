@@ -8,18 +8,29 @@ interface RegistryEntry {
 const REGISTRY_START = '<!-- copilot-skill-bridge:start -->';
 const REGISTRY_END = '<!-- copilot-skill-bridge:end -->';
 
-export function buildRegistryTable(entries: RegistryEntry[]): string {
-    if (entries.length === 0) {
-        return `## Available Skills\n\nNo skills imported yet.\n`;
+export function buildRegistryTable(entries: RegistryEntry[], hasPromptSkills?: boolean): string {
+    const parts: string[] = [];
+    parts.push('## Available Skills\n');
+
+    if (entries.length === 0 && !hasPromptSkills) {
+        parts.push('No skills imported yet.\n');
+        return parts.join('\n');
     }
 
-    const header = '## Available Skills\n\nWhen working on tasks, consult these skill files for guidance:\n\n';
-    const tableHeader = '| Skill | File |\n|-------|------|\n';
-    const rows = entries
-        .map(e => `| ${e.name} | ${e.file} |`)
-        .join('\n');
+    if (hasPromptSkills) {
+        parts.push('On-demand skills are available as slash commands in `.github/prompts/`.\n');
+    }
 
-    return header + tableHeader + rows + '\n';
+    if (entries.length > 0) {
+        parts.push('Always-active skills:\n');
+        const tableHeader = '| Skill | File |\n|-------|------|\n';
+        const rows = entries
+            .map(e => `| ${e.name} | ${e.file} |`)
+            .join('\n');
+        parts.push(tableHeader + rows + '\n');
+    }
+
+    return parts.join('\n');
 }
 
 export function mergeRegistryIntoInstructions(existingContent: string, registrySection: string): string {
@@ -65,7 +76,8 @@ export async function writePromptFile(
 
 export async function updateCopilotInstructions(
     workspaceUri: vscode.Uri,
-    entries: RegistryEntry[]
+    entries: RegistryEntry[],
+    hasPromptSkills?: boolean
 ): Promise<void> {
     const githubDir = vscode.Uri.joinPath(workspaceUri, '.github');
     await vscode.workspace.fs.createDirectory(githubDir);
@@ -79,7 +91,7 @@ export async function updateCopilotInstructions(
         // File doesn't exist yet
     }
 
-    const section = buildRegistryTable(entries);
+    const section = buildRegistryTable(entries, hasPromptSkills);
     const merged = mergeRegistryIntoInstructions(existing, section);
     await vscode.workspace.fs.writeFile(instructionsUri, Buffer.from(merged, 'utf-8'));
 }

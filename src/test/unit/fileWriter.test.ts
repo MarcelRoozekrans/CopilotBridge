@@ -3,21 +3,38 @@ import * as vscode from 'vscode';
 import { buildRegistryTable, mergeRegistryIntoInstructions, updateCopilotInstructions, writeInstructionsFile, writePromptFile, removeSkillFiles } from '../../fileWriter';
 
 describe('buildRegistryTable', () => {
-    it('should produce a 2-column markdown table', () => {
+    it('should produce a 2-column table for embedded skills', () => {
         const entries = [
-            { name: 'brainstorming', file: '.github/prompts/brainstorming.prompt.md' },
-            { name: 'tdd', file: '.github/prompts/tdd.prompt.md' },
+            { name: 'brainstorming', file: '.github/instructions/brainstorming.instructions.md' },
+            { name: 'tdd', file: '.github/instructions/tdd.instructions.md' },
         ];
         const table = buildRegistryTable(entries);
         assert.ok(table.includes('| Skill | File |'));
-        assert.ok(!table.includes('Trigger'));
+        assert.ok(table.includes('Always-active skills'));
         assert.ok(table.includes('| brainstorming |'));
         assert.ok(table.includes('| tdd |'));
     });
 
-    it('should return empty section for no entries', () => {
+    it('should return empty section when no entries and no prompts', () => {
         const table = buildRegistryTable([]);
         assert.ok(table.includes('No skills imported'));
+    });
+
+    it('should show prompts pointer when hasPromptSkills is true', () => {
+        const table = buildRegistryTable([], true);
+        assert.ok(table.includes('.github/prompts/'));
+        assert.ok(!table.includes('No skills imported'));
+        assert.ok(!table.includes('Always-active'));
+    });
+
+    it('should show both prompts pointer and embedded table', () => {
+        const entries = [
+            { name: 'tdd', file: '.github/instructions/tdd.instructions.md' },
+        ];
+        const table = buildRegistryTable(entries, true);
+        assert.ok(table.includes('.github/prompts/'));
+        assert.ok(table.includes('Always-active skills'));
+        assert.ok(table.includes('| tdd |'));
     });
 });
 
