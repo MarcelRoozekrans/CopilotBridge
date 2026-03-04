@@ -397,6 +397,22 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(updateWatcher);
 
+    // Watch manifest file for changes (e.g. branch switch)
+    const manifestWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceUri, '.github/.copilot-skill-bridge.json')
+    );
+    manifestWatcher.onDidChange(() => refreshAll());
+    manifestWatcher.onDidCreate(() => refreshAll());
+    manifestWatcher.onDidDelete(() => refreshAll());
+    context.subscriptions.push(manifestWatcher);
+
+    // Watch .git/HEAD for branch switches
+    const gitHeadWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceUri, '.git/HEAD')
+    );
+    gitHeadWatcher.onDidChange(() => refreshAll());
+    context.subscriptions.push(gitHeadWatcher);
+
     // Listen for config changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
