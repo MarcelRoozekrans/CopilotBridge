@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.12.0...copilot-skill-bridge-v0.13.0) (2026-03-04)
+
+
+### Features
+
+* bulk remove and fix registry table output ([#37](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/37)) ([f865a0e](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/f865a0ee6cbd06bd917d7f701b4babcb5e32399a))
+
 ## [0.12.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.11.1...copilot-skill-bridge-v0.12.0) (2026-03-03)
 
 
