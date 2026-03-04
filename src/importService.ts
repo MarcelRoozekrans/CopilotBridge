@@ -378,9 +378,9 @@ export class ImportService {
     }
 
     private async updateRegistry(manifest: import('./types').BridgeManifest, outputFormats?: OutputFormat[]): Promise<void> {
-        const entries = Object.keys(manifest.skills).map(name => {
-            return generateRegistryEntry(name, outputFormats);
-        });
+        const entries = Object.keys(manifest.skills)
+            .filter(name => manifest.skills[name].embedded === true)
+            .map(name => generateRegistryEntry(name, outputFormats));
         await updateCopilotInstructions(this.workspaceUri, entries);
     }
 
