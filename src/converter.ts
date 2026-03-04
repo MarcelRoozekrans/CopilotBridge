@@ -30,6 +30,12 @@ const CONVERSION_RULES: Array<{ pattern: RegExp; replacement: string }> = [
     { pattern: /\byour human partner\b/gi, replacement: 'the user' },
     { pattern: /\bClaude Code-specific\b/gi, replacement: 'AI assistant-specific' },
     { pattern: /\bClaude Code\b/gi, replacement: 'the AI assistant' },
+
+    // Bare "Claude" references (order matters: specific phrases before generic)
+    { pattern: /\bClaude Search Optimization\b/gi, replacement: 'AI Search Optimization' },
+    { pattern: /\bFor Claude:/gi, replacement: 'For the AI assistant:' },
+    { pattern: /\bfuture Claude\b/gi, replacement: 'future AI assistant' },
+    { pattern: /(?<![/:.])\bClaude\b(?![./])/g, replacement: 'the AI assistant' },
 ];
 
 export type OutputFormat = 'instructions' | 'prompts';

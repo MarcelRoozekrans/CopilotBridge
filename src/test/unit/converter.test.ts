@@ -101,6 +101,43 @@ describe('convertSkillContent', () => {
         assert.ok(result.includes('.github/instructions/brainstorming.instructions.md'));
     });
 
+    it('should replace "For Claude:" directives', () => {
+        const input = '> **For Claude:** REQUIRED SUB-SKILL: Use executing-plans.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('For Claude:'), 'Should not contain "For Claude:"');
+        assert.ok(result.includes('For the AI assistant:'));
+    });
+
+    it('should replace bare "Claude" references to the AI', () => {
+        const input = 'Skills help future Claude instances find and apply effective approaches.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('Claude'), 'Should not contain bare "Claude"');
+    });
+
+    it('should replace "Claude" in phrases like "Claude reads/needs/may/will"', () => {
+        const input = 'Claude reads description to decide. Claude may follow the description. Claude will take a shortcut.';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('Claude'), 'Should not contain "Claude"');
+    });
+
+    it('should replace "Claude Search Optimization"', () => {
+        const input = '## Claude Search Optimization (CSO)';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('Claude Search Optimization'));
+    });
+
+    it('should replace "future Claude" references', () => {
+        const input = 'Future Claude needs to FIND your skill. How future Claude finds your skill:';
+        const result = convertSkillContent(input);
+        assert.ok(!result.includes('Claude'), 'Should not contain "Claude"');
+    });
+
+    it('should not replace Claude in URLs or file paths', () => {
+        const input = 'See https://claude.ai/docs for more info.';
+        const result = convertSkillContent(input);
+        assert.ok(result.includes('claude.ai'), 'Should preserve Claude in URLs');
+    });
+
     it('should preserve graphviz diagrams', () => {
         const input = '```dot\ndigraph { A -> B; }\n```';
         const result = convertSkillContent(input);
