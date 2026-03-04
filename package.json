@@ -128,6 +128,11 @@
         "command": "copilotSkillBridge.removeAllFromMarketplace",
         "title": "Remove All from Project",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotSkillBridge.removeMarketplace",
+        "title": "Remove Marketplace",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -201,6 +206,16 @@
           "command": "copilotSkillBridge.removeAllFromMarketplace",
           "when": "view == skillBridgeExplorer && viewItem == marketplace",
           "group": "1_actions"
+        },
+        {
+          "command": "copilotSkillBridge.removeMarketplace",
+          "when": "view == skillBridgeExplorer && viewItem == marketplace",
+          "group": "4_remove"
+        },
+        {
+          "command": "copilotSkillBridge.removeMarketplace",
+          "when": "view == skillBridgeExplorer && viewItem == plugin",
+          "group": "4_remove"
         },
         {
           "command": "copilotSkillBridge.openSourceRepo",
