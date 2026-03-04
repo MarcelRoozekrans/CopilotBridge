@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.13.1...copilot-skill-bridge-v0.14.0) (2026-03-04)
+
+
+### Features
+
+* registry improvements, sidebar refresh, and Claude reference cleanup ([#41](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/41)) ([9b0ee21](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/9b0ee21a5f005663e4814882e7fb77bf7b0047a2))
+
 ## [0.13.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.13.0...copilot-skill-bridge-v0.13.1) (2026-03-04)
 
 
