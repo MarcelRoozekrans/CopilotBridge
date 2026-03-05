@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.16.0...copilot-skill-bridge-v0.16.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* show loading indicator instead of welcome view during refresh ([#51](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/51)) ([99890d0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/99890d0f12499a4648a4def38ed23fa07a72516c))
+
 ## [0.16.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.15.0...copilot-skill-bridge-v0.16.0) (2026-03-05)
 
 
