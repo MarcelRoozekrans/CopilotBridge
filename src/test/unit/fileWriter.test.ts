@@ -15,6 +15,12 @@ describe('buildRegistryTable', () => {
         assert.ok(table.includes('| tdd |'));
     });
 
+    it('should include Context Over Tools section', () => {
+        const table = buildRegistryTable([]);
+        assert.ok(table.includes('## Context Over Tools'));
+        assert.ok(table.includes('Prefer using conversation context'));
+    });
+
     it('should return empty section when no entries and no prompts', () => {
         const table = buildRegistryTable([]);
         assert.ok(table.includes('No skills imported'));
