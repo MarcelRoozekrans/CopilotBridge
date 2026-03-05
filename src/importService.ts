@@ -116,11 +116,14 @@ export class ImportService {
             return;
         }
 
+        const choice = await vscode.window.showInformationMessage(
+            `Import "${skill.name}"?`,
+            { modal: true },
+            'Import'
+        );
+        if (choice !== 'Import') { return; }
+
         const conversion = await this.convertSkill(skill, outputFormats as OutputFormat[], useLm);
-
-        const accepted = await this.showPreview(skill, conversion);
-        if (!accepted) { return; }
-
         await this.writeSkillFiles(skill, conversion, outputFormats, generateRegistry);
         vscode.window.showInformationMessage(`Imported skill: ${skill.name}`);
     }
@@ -443,39 +446,6 @@ export class ImportService {
             .map(name => generateRegistryEntry(name, outputFormats));
         const hasPromptSkills = allSkills.length > entries.length;
         await updateCopilotInstructions(this.workspaceUri, entries, hasPromptSkills);
-    }
-
-    private async showPreview(skill: SkillInfo, conversion: ConversionResult): Promise<boolean> {
-        const originalDoc = await vscode.workspace.openTextDocument({
-            content: skill.content,
-            language: 'markdown',
-        });
-        const convertedDoc = await vscode.workspace.openTextDocument({
-            content: conversion.instructionsContent,
-            language: 'markdown',
-        });
-
-        await vscode.commands.executeCommand(
-            'vscode.diff',
-            originalDoc.uri,
-            convertedDoc.uri,
-            `${skill.name}: Claude → Copilot`
-        );
-
-        const choice = await vscode.window.showInformationMessage(
-            `Import "${skill.name}" with the shown conversion?`,
-            'Accept',
-            'Cancel'
-        );
-
-        // Close the diff tab regardless of outcome
-        try {
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-        } catch {
-            // Best-effort: editor may already be closed
-        }
-
-        return choice === 'Accept';
     }
 
     setPlugins(plugins: PluginInfo[]) {
