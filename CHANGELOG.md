@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.15.0...copilot-skill-bridge-v0.16.0) (2026-03-05)
+
+
+### Features
+
+* add Context Over Tools and fix embed/unembed registry updates ([#48](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/48)) ([9e283af](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/9e283afec6d39980a9633c50a13dfa17e41ad8f0))
+
 ## [0.15.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.14.1...copilot-skill-bridge-v0.15.0) (2026-03-05)
 
 
