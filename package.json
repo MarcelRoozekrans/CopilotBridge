@@ -139,18 +139,33 @@
         "command": "copilotSkillBridge.removeMarketplace",
         "title": "Remove Marketplace",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotSkillBridge.updateSkill",
+        "title": "Update Skill",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
       "view/item/context": [
         {
           "command": "copilotSkillBridge.importSkill",
-          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(available|update-available)/",
+          "when": "view == skillBridgeExplorer && viewItem == skill-available",
           "group": "inline"
         },
         {
           "command": "copilotSkillBridge.importSkill",
-          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(available|update-available)/",
+          "when": "view == skillBridgeExplorer && viewItem == skill-available",
+          "group": "1_actions"
+        },
+        {
+          "command": "copilotSkillBridge.updateSkill",
+          "when": "view == skillBridgeExplorer && viewItem == skill-update-available",
+          "group": "inline"
+        },
+        {
+          "command": "copilotSkillBridge.updateSkill",
+          "when": "view == skillBridgeExplorer && viewItem == skill-update-available",
           "group": "1_actions"
         },
         {

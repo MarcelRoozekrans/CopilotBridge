@@ -148,6 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
         // Register remaining commands as no-ops that show a helpful message
         const workspaceCommands = [
             'copilotSkillBridge.importSkill',
+            'copilotSkillBridge.updateSkill',
             'copilotSkillBridge.importAllSkills',
             'copilotSkillBridge.checkForUpdates',
             'copilotSkillBridge.removeSkill',
@@ -201,6 +202,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Full refresh: re-discover plugins from local cache and remote repos
     async function refreshAll() {
+        treeProvider.setLoading();
         const { cachePath, remoteRepos } = getConfig();
         const { plugins, errors } = await importService.discoverAllPlugins(cachePath, remoteRepos);
         importService.setPlugins(plugins);
@@ -252,6 +254,21 @@ export async function activate(context: vscode.ExtensionContext) {
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
                     vscode.window.showErrorMessage(`Import failed for "${item.skillInfo.name}": ${msg}`);
+                }
+                await refreshAll();
+            } else {
+                vscode.window.showWarningMessage('Select a skill from the Copilot Skill Bridge sidebar.');
+            }
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.updateSkill', async (item?: SkillTreeItem) => {
+            if (item?.skillInfo) {
+                const { outputFormats, generateRegistry, useLmConversion } = getConfig();
+                try {
+                    await importService.updateSkill(item.skillInfo, outputFormats, generateRegistry, useLmConversion);
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    vscode.window.showErrorMessage(`Update failed for "${item.skillInfo.name}": ${msg}`);
                 }
                 await refreshAll();
             } else {
