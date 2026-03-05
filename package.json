@@ -296,6 +296,11 @@
           "type": "boolean",
           "default": true,
           "description": "Add skill registry to copilot-instructions.md"
+        },
+        "copilotSkillBridge.useLmConversion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use Copilot language model to enhance skill conversion (contextual rephrasing)"
         }
       }
     }
