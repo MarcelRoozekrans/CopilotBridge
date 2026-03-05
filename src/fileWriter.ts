@@ -10,6 +10,8 @@ const REGISTRY_END = '<!-- copilot-skill-bridge:end -->';
 
 export function buildRegistryTable(entries: RegistryEntry[], hasPromptSkills?: boolean): string {
     const parts: string[] = [];
+    parts.push('## Context Over Tools\n');
+    parts.push('Prefer using conversation context, file contents already shared, and information from previous messages over invoking tools to re-read or re-fetch the same data. Only use tools when the needed information is not already available in context.\n');
     parts.push('## Available Skills\n');
 
     if (entries.length === 0 && !hasPromptSkills) {
