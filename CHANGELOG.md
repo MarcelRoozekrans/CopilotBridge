@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.14.0...copilot-skill-bridge-v0.14.1) (2026-03-05)
+
+
+### Bug Fixes
+
+* show auth errors and welcome view when sidebar is empty ([#43](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/43)) ([93e08cd](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/93e08cddb5df18a3f9ffbf8afb810bd2fad1796b))
+
 ## [0.14.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.13.1...copilot-skill-bridge-v0.14.0) (2026-03-04)
 
 
