@@ -383,6 +383,7 @@ export class ImportService {
 
         manifest = setSkillEmbedded(manifest, skillName, true);
         await saveManifest(this.workspaceUri, manifest);
+        await this.updateRegistry(manifest);
         vscode.window.showInformationMessage(`Skill "${skillName}" is now always active via instructions file.`);
     }
 
@@ -396,6 +397,7 @@ export class ImportService {
 
         manifest = setSkillEmbedded(manifest, skillName, false);
         await saveManifest(this.workspaceUri, manifest);
+        await this.updateRegistry(manifest);
         vscode.window.showInformationMessage(`Skill "${skillName}" is no longer always active.`);
     }
 
