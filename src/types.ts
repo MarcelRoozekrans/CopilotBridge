@@ -124,3 +124,14 @@ export interface BulkImportResult {
     imported: string[];
     failed: Array<{ name: string; error: string }>;
 }
+
+export interface DiscoveryError {
+    repo: string;
+    message: string;
+    requiresAuth: boolean;
+}
+
+export interface DiscoveryResult {
+    plugins: PluginInfo[];
+    errors: DiscoveryError[];
+}

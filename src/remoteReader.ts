@@ -34,12 +34,23 @@ export function buildRemoteSkillInfo(
     };
 }
 
+export class GitHubApiError extends Error {
+    constructor(public readonly status: number, statusText: string) {
+        super(`GitHub API error: ${status} ${statusText}`);
+        this.name = 'GitHubApiError';
+    }
+
+    get requiresAuth(): boolean {
+        return this.status === 401 || this.status === 403;
+    }
+}
+
 async function fetchJson(url: string): Promise<any> {
     const token = await getGitHubToken();
     const headers = buildAuthHeaders(token);
     const response = await fetch(url, { headers });
     if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        throw new GitHubApiError(response.status, response.statusText);
     }
     return response.json();
 }
@@ -69,7 +80,8 @@ export async function discoverRemotePlugins(repo: string): Promise<PluginInfo[]>
         const marketplaceContent = await fetchFileContent(repo, '.claude-plugin/marketplace.json');
         const marketplace: MarketplaceJson = JSON.parse(marketplaceContent);
         pluginEntries = normalizeMarketplaceJson(marketplace);
-    } catch {
+    } catch (err) {
+        if (err instanceof GitHubApiError && err.requiresAuth) { throw err; }
         try {
             const pluginContent = await fetchFileContent(repo, '.claude-plugin/plugin.json');
             const pluginMeta: PluginJson = JSON.parse(pluginContent);
@@ -79,7 +91,8 @@ export async function discoverRemotePlugins(repo: string): Promise<PluginInfo[]>
                 version: pluginMeta.version,
                 source: './',
             }];
-        } catch {
+        } catch (err2) {
+            if (err2 instanceof GitHubApiError && err2.requiresAuth) { throw err2; }
             return plugins;
         }
     }

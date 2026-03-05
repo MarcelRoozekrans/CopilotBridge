@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult } from './types';
+import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult, DiscoveryResult, DiscoveryError } from './types';
 import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry, OutputFormat } from './converter';
 import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles } from './fileWriter';
 import { discoverLocalPlugins } from './localReader';
-import { discoverRemotePlugins } from './remoteReader';
+import { discoverRemotePlugins, GitHubApiError } from './remoteReader';
 import { convertMcpServers } from './mcpConverter';
 import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
 import { analyzeCompatibility } from './compatAnalyzer';
@@ -24,20 +24,32 @@ export class ImportService {
 
     constructor(private workspaceUri: vscode.Uri) {}
 
-    async discoverAllPlugins(cachePath: string, remoteRepos: string[]): Promise<PluginInfo[]> {
+    async discoverAllPlugins(cachePath: string, remoteRepos: string[]): Promise<DiscoveryResult> {
         const localPlugins = await discoverLocalPlugins(cachePath);
         const remoteResults = await Promise.allSettled(
             remoteRepos.map(repo => discoverRemotePlugins(repo))
         );
 
         const remotePlugins: PluginInfo[] = [];
-        for (const result of remoteResults) {
+        const errors: DiscoveryError[] = [];
+        for (let i = 0; i < remoteResults.length; i++) {
+            const result = remoteResults[i];
             if (result.status === 'fulfilled') {
                 remotePlugins.push(...result.value);
+            } else {
+                const err = result.reason;
+                errors.push({
+                    repo: remoteRepos[i],
+                    message: err instanceof Error ? err.message : String(err),
+                    requiresAuth: err instanceof GitHubApiError && err.requiresAuth,
+                });
             }
         }
 
-        return this.mergePluginLists(localPlugins, remotePlugins);
+        return {
+            plugins: this.mergePluginLists(localPlugins, remotePlugins),
+            errors,
+        };
     }
 
     mergePluginLists(localPlugins: PluginInfo[], remotePlugins: PluginInfo[]): PluginInfo[] {

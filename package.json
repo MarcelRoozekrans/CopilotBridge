@@ -49,6 +49,12 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "skillBridgeExplorer",
+        "contents": "No skills found.\n\nAdd a marketplace to get started.\n[Add Marketplace](command:copilotSkillBridge.addMarketplace)\n\nIf you already added one, you may need to sign in to GitHub.\n[Sign in to GitHub](command:copilotSkillBridge.login)"
+      }
+    ],
     "commands": [
       {
         "command": "copilotSkillBridge.importSkill",

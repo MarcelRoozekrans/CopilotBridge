@@ -3,6 +3,7 @@ import { SkillBridgeTreeProvider, SkillTreeItem } from './treeView';
 import { ImportService } from './importService';
 import { UpdateWatcher } from './updateWatcher';
 import { loadManifest } from './stateManager';
+import { DiscoveryError } from './types';
 
 let updateWatcher: UpdateWatcher | undefined;
 
@@ -47,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const token = await loginToGitHub();
             if (token) {
                 vscode.window.showInformationMessage('Signed in to GitHub successfully.');
+                await vscode.commands.executeCommand('copilotSkillBridge.checkForUpdates');
             } else {
                 vscode.window.showWarningMessage('GitHub sign-in was cancelled or failed.');
             }
@@ -199,10 +201,42 @@ export async function activate(context: vscode.ExtensionContext) {
     // Full refresh: re-discover plugins from local cache and remote repos
     async function refreshAll() {
         const { cachePath, remoteRepos } = getConfig();
-        const plugins = await importService.discoverAllPlugins(cachePath, remoteRepos);
+        const { plugins, errors } = await importService.discoverAllPlugins(cachePath, remoteRepos);
         importService.setPlugins(plugins);
         const manifest = await loadManifest(workspaceUri);
         treeProvider.setData(plugins, manifest);
+
+        if (errors.length > 0) {
+            // Don't block refresh — show errors asynchronously
+            handleDiscoveryErrors(errors).catch(() => {});
+        }
+    }
+
+    async function handleDiscoveryErrors(errors: DiscoveryError[]) {
+        const authErrors = errors.filter(e => e.requiresAuth);
+        const otherErrors = errors.filter(e => !e.requiresAuth);
+
+        if (authErrors.length > 0) {
+            const repos = authErrors.map(e => e.repo).join(', ');
+            const choice = await vscode.window.showWarningMessage(
+                `GitHub authentication required to fetch: ${repos}`,
+                'Sign in to GitHub',
+                'Dismiss'
+            );
+            if (choice === 'Sign in to GitHub') {
+                const { loginToGitHub } = await import('./auth');
+                const token = await loginToGitHub();
+                if (token) {
+                    await refreshAll();
+                }
+            }
+        }
+
+        for (const err of otherErrors) {
+            vscode.window.showWarningMessage(
+                `Failed to fetch marketplace "${err.repo}": ${err.message}`
+            );
+        }
     }
 
     await refreshAll();
@@ -458,7 +492,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration('copilotSkillBridge')) {
-                refreshAll();
+                refreshAll().catch(() => { /* errors handled inside refreshAll */ });
             }
         })
     );

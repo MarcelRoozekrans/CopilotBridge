@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { buildGitHubApiUrl, parseGitHubContentsResponse, buildRemoteSkillInfo, normalizeMarketplaceJson } from '../../remoteReader';
+import { buildGitHubApiUrl, parseGitHubContentsResponse, buildRemoteSkillInfo, normalizeMarketplaceJson, GitHubApiError } from '../../remoteReader';
 
 describe('buildGitHubApiUrl', () => {
     it('should build correct contents API URL', () => {
@@ -76,5 +76,29 @@ describe('normalizeMarketplaceJson', () => {
     it('should return empty array when no plugins found', () => {
         const result = normalizeMarketplaceJson({ name: 'empty' });
         assert.strictEqual(result.length, 0);
+    });
+});
+
+describe('GitHubApiError', () => {
+    it('should identify 401 as requiring auth', () => {
+        const err = new GitHubApiError(401, 'Unauthorized');
+        assert.strictEqual(err.requiresAuth, true);
+        assert.strictEqual(err.status, 401);
+        assert.ok(err.message.includes('401'));
+    });
+
+    it('should identify 403 as requiring auth', () => {
+        const err = new GitHubApiError(403, 'Forbidden');
+        assert.strictEqual(err.requiresAuth, true);
+    });
+
+    it('should not flag 404 as requiring auth', () => {
+        const err = new GitHubApiError(404, 'Not Found');
+        assert.strictEqual(err.requiresAuth, false);
+    });
+
+    it('should not flag 500 as requiring auth', () => {
+        const err = new GitHubApiError(500, 'Internal Server Error');
+        assert.strictEqual(err.requiresAuth, false);
     });
 });
