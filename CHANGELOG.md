@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.14.1...copilot-skill-bridge-v0.15.0) (2026-03-05)
+
+
+### Features
+
+* LM-enhanced skill conversion via Copilot Language Model API ([#45](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/issues/45)) ([3994929](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/3994929a4e0bd2e816455ba8560031f63e814647))
+
 ## [0.14.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.14.0...copilot-skill-bridge-v0.14.1) (2026-03-05)
 
 
