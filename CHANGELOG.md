@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.19.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.19.1...copilot-skill-bridge-v0.19.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* marketplace UX improvements ([9537278](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/95372785070d847d086ceb12f582568fd92ff122))
+* marketplace UX improvements ([3445521](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/34455215382cd3d9b0da98c6be328351afc91314))
+* use generic labels for import/remove to cover skills and MCP servers ([c80b9ed](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/c80b9ed8824f76102891107bdbf273cd4c749872))
+
+
+### Documentation
+
+* update README for new commands and label changes ([4d2e171](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/4d2e171176f56ee902f22047af793bf656b386c6))
+
 ## [0.19.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.19.0...copilot-skill-bridge-v0.19.1) (2026-03-06)
 
 
