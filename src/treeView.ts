@@ -269,10 +269,17 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
         const items: SkillTreeItem[] = [];
         for (const depRepo of depRepos) {
             const plugins = this.plugins.filter(p => p.marketplace === depRepo);
-            if (plugins.length === 0) {
-                // All redirects or failed fetches — skip
+            const hasSubDeps = (this.depGraph.edges.get(depRepo)?.length ?? 0) > 0;
+            if (plugins.length === 0 && !hasSubDeps) {
+                // No plugins and no sub-dependencies — skip
                 continue;
-            } else if (plugins.length === 1) {
+            } else if (plugins.length === 0 && hasSubDeps) {
+                // Redirect-only repo (e.g. marketplace with all source redirects) — show as marketplace so Dependencies folder renders
+                const node = new SkillTreeItem(depRepo, 'marketplace', undefined, undefined, undefined, undefined, undefined, depRepo);
+                const subDeps = this.depGraph.edges.get(depRepo)!;
+                node.description = `${subDeps.length} repo${subDeps.length > 1 ? 's' : ''}`;
+                items.push(node);
+            } else if (plugins.length === 1 && !hasSubDeps) {
                 items.push(new SkillTreeItem(plugins[0].name, 'plugin', plugins[0]));
             } else {
                 const node = new SkillTreeItem(depRepo, 'marketplace', undefined, undefined, undefined, undefined, undefined, depRepo);

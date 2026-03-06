@@ -615,6 +615,50 @@ describe('TreeView dependency grouping', () => {
         assert.strictEqual(roots[0].itemType, 'marketplace', 'Single-plugin root with deps should be promoted to marketplace');
         assert.strictEqual(roots[0].marketplaceRepo, 'obra/superpowers');
     });
+
+    it('should show redirect-only dep repo as marketplace when it has sub-dependencies', () => {
+        // Simulates obra/superpowers-marketplace: 0 direct plugins, all source-redirected
+        const plugins = [
+            makePlugin({ name: 'my-ext', marketplace: 'user/extensions' }),
+            makePlugin({ name: 'superpowers', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'elements', marketplace: 'obra/elements-of-style' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map([
+                ['user/extensions', ['obra/superpowers-marketplace']],
+                ['obra/superpowers-marketplace', ['obra/superpowers', 'obra/elements-of-style']],
+            ]),
+            roots: ['user/extensions'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        // Root should only show user/extensions
+        const roots = provider.getChildren(undefined);
+        assert.strictEqual(roots.length, 1);
+        const marketplace = roots[0];
+        assert.strictEqual(marketplace.itemType, 'marketplace');
+
+        // Marketplace children: my-ext plugin + Dependencies folder
+        const children = provider.getChildren(marketplace);
+        const depGroup = children.find(c => c.itemType === 'dependencyGroup')!;
+        assert.ok(depGroup, 'Should have Dependencies folder');
+
+        // Dependencies folder: obra/superpowers-marketplace (redirect-only, has sub-deps)
+        const depChildren = provider.getChildren(depGroup);
+        assert.strictEqual(depChildren.length, 1);
+        assert.strictEqual(depChildren[0].label, 'obra/superpowers-marketplace');
+        assert.strictEqual(depChildren[0].itemType, 'marketplace');
+        assert.strictEqual(depChildren[0].description, '2 repos');
+
+        // Expanding the redirect-only marketplace shows its sub-dependencies
+        const subChildren = provider.getChildren(depChildren[0]);
+        const subDepGroup = subChildren.find(c => c.itemType === 'dependencyGroup')!;
+        assert.ok(subDepGroup, 'Redirect-only marketplace should have Dependencies folder');
+        const subDepChildren = provider.getChildren(subDepGroup);
+        assert.strictEqual(subDepChildren.length, 2);
+        const subLabels = subDepChildren.map(c => c.label).sort();
+        assert.deepStrictEqual(subLabels, ['elements', 'superpowers']);
+    });
 });
 
 describe('TreeView skill dependency descriptions', () => {
