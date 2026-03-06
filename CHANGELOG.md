@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.18.1...copilot-skill-bridge-v0.19.0) (2026-03-06)
+
+
+### Features
+
+* add output channel logging and BFS dependency tests ([1d5132a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/1d5132af4f41cd1f71b75483b8e13c55ccb75e7a))
+
 ## [0.18.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.18.0...copilot-skill-bridge-v0.18.1) (2026-03-06)
 
 
