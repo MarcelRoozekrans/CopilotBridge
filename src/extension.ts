@@ -449,7 +449,12 @@ export async function activate(context: vscode.ExtensionContext) {
             await config.update('marketplaces', updated, vscode.ConfigurationTarget.Global);
 
             vscode.window.showInformationMessage(`Removed marketplace: ${repo}`);
-            await refreshAll();
+
+            // Update sidebar immediately without full remote re-fetch
+            const remaining = importService.getPlugins().filter(p => p.marketplace !== repo);
+            importService.setPlugins(remaining);
+            const updatedManifest = await loadManifest(workspaceUri);
+            treeProvider.setData(remaining, updatedManifest);
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.removeAllFromMarketplace', async (item?: SkillTreeItem) => {
@@ -468,7 +473,10 @@ export async function activate(context: vscode.ExtensionContext) {
                 const msg = err instanceof Error ? err.message : String(err);
                 vscode.window.showErrorMessage(`Remove All failed: ${msg}`);
             }
-            await refreshAll();
+
+            // Update sidebar immediately without full remote re-fetch
+            const updatedManifest = await loadManifest(workspaceUri);
+            treeProvider.setData(importService.getPlugins(), updatedManifest);
         }),
     );
 
