@@ -110,7 +110,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 if (selected?.label === MANUAL_ENTRY_LABEL) {
                     repo = await vscode.window.showInputBox({
                         prompt: 'Enter GitHub repo (owner/name)',
-                        placeHolder: 'obra/superpowers',
+                        placeHolder: 'owner/repo',
                         validateInput: (value) => {
                             return /^[\w.-]+\/[\w.-]+$/.test(value) ? null : 'Format: owner/repo-name';
                         },
@@ -175,7 +175,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('copilotSkillBridge');
         return {
             cachePath: config.get<string>('claudeCachePath', '~/.claude/plugins/cache'),
-            remoteRepos: config.get<string[]>('marketplaces', ['obra/superpowers']),
+            remoteRepos: config.get<string[]>('marketplaces', []),
             checkInterval: config.get<number>('checkInterval', 86400),
             outputFormats: config.get<string[]>('outputFormats', ['prompts']),
             generateRegistry: config.get<boolean>('generateRegistry', true),

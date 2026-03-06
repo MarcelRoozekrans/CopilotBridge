@@ -278,9 +278,7 @@
           "items": {
             "type": "string"
           },
-          "default": [
-            "obra/superpowers"
-          ],
+          "default": [],
           "description": "GitHub repos to fetch marketplace skills from"
         },
         "copilotSkillBridge.checkInterval": {
