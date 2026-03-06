@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.18.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.17.0...copilot-skill-bridge-v0.18.0) (2026-03-06)
+
+
+### Features
+
+* add transitive dependency resolution and MCP server discovery ([628815c](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/628815c2626d6c0f7b0fcadbb5ff219d7dd71149))
+* companion files, dependency resolution, and MCP discovery ([b04d4e2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/b04d4e2c4231fd8a5d542f00d265cc46b34d70de))
+* progressive rendering for plugin discovery ([b04f3ed](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/b04f3ed920f227028ccc482de26859ec377a399b))
+
+
+### Bug Fixes
+
+* avoid redundant plugin.json fetch in remote discovery ([207b7d2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/207b7d20dfa92be787fb59fce90e7166aa53af79))
+* increase integration test timeout for activation ([eeabd8f](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/eeabd8f23dec18226f8f828d0aecfa29d55d708a))
+
+
+### Performance
+
+* parallelize GitHub API calls and cache auth token ([154501b](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/154501bc251faaed6e87c5d2dfae011bda8b738a))
+
 ## [0.17.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.16.1...copilot-skill-bridge-v0.17.0) (2026-03-06)
 
 
