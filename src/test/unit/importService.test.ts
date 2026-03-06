@@ -572,3 +572,98 @@ describe('ImportService.getPluginsByMarketplace', () => {
         assert.strictEqual(result.length, 0);
     });
 });
+
+describe('ImportService.resolveDependencies', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+    const vscode = require('vscode');
+    let origReadFile: any;
+    let fileStore: Map<string, Buffer>;
+
+    before(() => {
+        origReadFile = vscode.workspace.fs.readFile;
+    });
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+        fileStore = new Map();
+        vscode.workspace.fs.readFile = async (uri: any) => {
+            const data = fileStore.get(uri.fsPath);
+            if (data) { return data; }
+            throw new Error('not found');
+        };
+    });
+
+    afterEach(() => {
+        vscode.workspace.fs.readFile = origReadFile;
+    });
+
+    it('should find missing skill dependencies from superpowers: references', async () => {
+        const depSkill = makeSkill({ name: 'brainstorming', content: '# Brainstorming' });
+        const mainSkill = makeSkill({
+            name: 'tdd',
+            content: 'Use superpowers:brainstorming first.',
+        });
+
+        const plugins: PluginInfo[] = [
+            { name: 'plugin-a', description: '', version: '1', skills: [mainSkill], marketplace: 'test', source: 'remote' },
+            { name: 'plugin-b', description: '', version: '1', skills: [depSkill], marketplace: 'dep', source: 'remote' },
+        ];
+        service.setPlugins(plugins);
+
+        const { missingSkills, missingMcpServers } = await service.resolveDependencies(mainSkill);
+        assert.strictEqual(missingSkills.length, 1);
+        assert.strictEqual(missingSkills[0].name, 'brainstorming');
+        assert.strictEqual(missingMcpServers.length, 0);
+    });
+
+    it('should find missing MCP servers from skill plugin', async () => {
+        const srv: McpServerInfo = { name: 'playwright', config: { command: 'npx' }, pluginName: 'test', pluginVersion: '1.0.0', marketplace: 'test' };
+        const skill = makeSkill({ name: 'regression-test', content: '# Regression test' });
+        const plugins: PluginInfo[] = [
+            { name: 'test-plugin', description: '', version: '1', skills: [skill], mcpServers: [srv], marketplace: 'test', source: 'remote' },
+        ];
+        service.setPlugins(plugins);
+
+        const { missingSkills, missingMcpServers } = await service.resolveDependencies(skill);
+        assert.strictEqual(missingSkills.length, 0);
+        assert.strictEqual(missingMcpServers.length, 1);
+        assert.strictEqual(missingMcpServers[0].name, 'playwright');
+    });
+
+    it('should not include self-references as dependencies', async () => {
+        const skill = makeSkill({
+            name: 'tdd',
+            content: 'Use superpowers:tdd recursively.',
+        });
+        service.setPlugins([
+            { name: 'p', description: '', version: '1', skills: [skill], marketplace: 'test', source: 'remote' },
+        ]);
+
+        const { missingSkills } = await service.resolveDependencies(skill);
+        assert.strictEqual(missingSkills.length, 0);
+    });
+
+    it('should return empty when all dependencies are already imported', async () => {
+        // Simulate an already-imported manifest
+        const manifestContent = JSON.stringify({
+            skills: { brainstorming: { source: 'test', sourceHash: 'abc', importedHash: 'abc', importedAt: '', locallyModified: false } },
+            mcpServers: {},
+            marketplaces: [],
+            settings: { checkInterval: 86400, autoAcceptUpdates: false },
+        });
+        fileStore.set('/tmp/test-workspace/.github/.copilot-skill-bridge.json', Buffer.from(manifestContent));
+
+        const skill = makeSkill({
+            name: 'tdd',
+            content: 'Use superpowers:brainstorming.',
+        });
+        const depSkill = makeSkill({ name: 'brainstorming', content: '# Brainstorming' });
+        service.setPlugins([
+            { name: 'p', description: '', version: '1', skills: [skill, depSkill], marketplace: 'test', source: 'remote' },
+        ]);
+
+        const { missingSkills } = await service.resolveDependencies(skill);
+        assert.strictEqual(missingSkills.length, 0);
+    });
+});

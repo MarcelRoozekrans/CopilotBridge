@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { buildGitHubApiUrl, parseGitHubContentsResponse, buildRemoteSkillInfo, normalizeMarketplaceJson, GitHubApiError } from '../../remoteReader';
+import { buildGitHubApiUrl, parseGitHubContentsResponse, buildRemoteSkillInfo, normalizeMarketplaceJson, extractDependencies, parseGitHubRepoFromUrl, GitHubApiError } from '../../remoteReader';
 
 describe('buildGitHubApiUrl', () => {
     it('should build correct contents API URL', () => {
@@ -38,8 +38,9 @@ describe('normalizeMarketplaceJson', () => {
             name: 'superpowers',
             plugins: [{ name: 'sp', description: 'desc', version: '1.0.0', source: './' }],
         });
-        assert.strictEqual(result.length, 1);
-        assert.strictEqual(result[0].source, './');
+        assert.strictEqual(result.plugins.length, 1);
+        assert.strictEqual(result.plugins[0].source, './');
+        assert.strictEqual(result.sourceRedirectRepos.length, 0);
     });
 
     it('should handle nested marketplace.plugins with path field', () => {
@@ -49,16 +50,16 @@ describe('normalizeMarketplaceJson', () => {
                 plugins: [{ name: 'a11y', description: 'audit', version: '1.0.0', path: 'plugins/a11y-audit' }],
             },
         });
-        assert.strictEqual(result.length, 1);
-        assert.strictEqual(result[0].name, 'a11y');
-        assert.strictEqual(result[0].source, 'plugins/a11y-audit');
+        assert.strictEqual(result.plugins.length, 1);
+        assert.strictEqual(result.plugins[0].name, 'a11y');
+        assert.strictEqual(result.plugins[0].source, 'plugins/a11y-audit');
     });
 
     it('should default source to ./ when neither source nor path is present', () => {
         const result = normalizeMarketplaceJson({
             plugins: [{ name: 'test', description: 'd', version: '1.0.0' }],
         });
-        assert.strictEqual(result[0].source, './');
+        assert.strictEqual(result.plugins[0].source, './');
     });
 
     it('should prefer top-level plugins over marketplace.plugins', () => {
@@ -68,14 +69,66 @@ describe('normalizeMarketplaceJson', () => {
                 plugins: [{ name: 'nested', description: 'd', version: '1.0.0', path: 'x' }],
             },
         });
-        // marketplace.plugins is fallback; top-level plugins takes precedence
-        assert.strictEqual(result.length, 1);
-        assert.strictEqual(result[0].name, 'top');
+        assert.strictEqual(result.plugins.length, 1);
+        assert.strictEqual(result.plugins[0].name, 'top');
     });
 
     it('should return empty array when no plugins found', () => {
         const result = normalizeMarketplaceJson({ name: 'empty' });
-        assert.strictEqual(result.length, 0);
+        assert.strictEqual(result.plugins.length, 0);
+        assert.strictEqual(result.sourceRedirectRepos.length, 0);
+    });
+
+    it('should extract redirect repos from object-based source.url entries', () => {
+        const result = normalizeMarketplaceJson({
+            plugins: [
+                { name: 'superpowers', description: 'skills', version: '4.3.1', source: { source: 'url', url: 'https://github.com/obra/superpowers.git' } },
+                { name: 'local-plugin', description: 'local', version: '1.0.0', source: './' },
+            ],
+        });
+        // Object-based source entry is skipped from plugins, added to redirects
+        assert.strictEqual(result.plugins.length, 1);
+        assert.strictEqual(result.plugins[0].name, 'local-plugin');
+        assert.deepStrictEqual(result.sourceRedirectRepos, ['obra/superpowers']);
+    });
+
+    it('should handle all plugins being redirects', () => {
+        const result = normalizeMarketplaceJson({
+            plugins: [
+                { name: 'a', description: 'd', version: '1.0.0', source: { source: 'url', url: 'https://github.com/owner/repo-a.git' } },
+                { name: 'b', description: 'd', version: '1.0.0', source: { source: 'url', url: 'https://github.com/owner/repo-b.git' } },
+            ],
+        });
+        assert.strictEqual(result.plugins.length, 0);
+        assert.deepStrictEqual(result.sourceRedirectRepos, ['owner/repo-a', 'owner/repo-b']);
+    });
+
+    it('should skip redirect entries with invalid URLs', () => {
+        const result = normalizeMarketplaceJson({
+            plugins: [
+                { name: 'bad', description: 'd', version: '1.0.0', source: { source: 'url', url: 'not-a-github-url' } },
+            ],
+        });
+        assert.strictEqual(result.plugins.length, 0);
+        assert.strictEqual(result.sourceRedirectRepos.length, 0);
+    });
+});
+
+describe('parseGitHubRepoFromUrl', () => {
+    it('should parse https://github.com/owner/repo.git', () => {
+        assert.strictEqual(parseGitHubRepoFromUrl('https://github.com/obra/superpowers.git'), 'obra/superpowers');
+    });
+
+    it('should parse https://github.com/owner/repo without .git', () => {
+        assert.strictEqual(parseGitHubRepoFromUrl('https://github.com/owner/repo'), 'owner/repo');
+    });
+
+    it('should return undefined for non-GitHub URLs', () => {
+        assert.strictEqual(parseGitHubRepoFromUrl('https://gitlab.com/owner/repo'), undefined);
+    });
+
+    it('should return undefined for invalid URLs', () => {
+        assert.strictEqual(parseGitHubRepoFromUrl('not-a-url'), undefined);
     });
 });
 
@@ -95,6 +148,53 @@ describe('buildRemoteSkillInfo with companions', () => {
     it('should default to undefined when empty array', () => {
         const skill = buildRemoteSkillInfo('tdd', 'TDD', '# Content', 'sp', '1.0.0', 'obra/sp', []);
         assert.strictEqual(skill.companionFiles, undefined);
+    });
+});
+
+describe('extractDependencies', () => {
+    it('should extract gh: prefixed dependencies', () => {
+        const result = extractDependencies({
+            dependencies: ['gh:obra/superpowers-marketplace', 'gh:user/repo'],
+        });
+        assert.deepStrictEqual(result, ['obra/superpowers-marketplace', 'user/repo']);
+    });
+
+    it('should handle dependencies without gh: prefix', () => {
+        const result = extractDependencies({
+            dependencies: ['owner/repo'],
+        });
+        assert.deepStrictEqual(result, ['owner/repo']);
+    });
+
+    it('should return empty array when no dependencies', () => {
+        const result = extractDependencies({ name: 'empty' });
+        assert.strictEqual(result.length, 0);
+    });
+
+    it('should filter out invalid entries without slash', () => {
+        const result = extractDependencies({
+            dependencies: ['gh:valid/repo', 'invalid-no-slash'],
+        });
+        assert.deepStrictEqual(result, ['valid/repo']);
+    });
+
+    it('should read dependencies from nested marketplace key', () => {
+        const result = extractDependencies({
+            marketplace: {
+                dependencies: ['gh:nested/dep'],
+            },
+        });
+        assert.deepStrictEqual(result, ['nested/dep']);
+    });
+
+    it('should prefer top-level dependencies over nested', () => {
+        const result = extractDependencies({
+            dependencies: ['gh:top/dep'],
+            marketplace: {
+                dependencies: ['gh:nested/dep'],
+            },
+        });
+        assert.deepStrictEqual(result, ['top/dep']);
     });
 });
 

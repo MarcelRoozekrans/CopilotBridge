@@ -119,7 +119,13 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
                 item.iconPath = new vscode.ThemeIcon('sync~spin');
                 return [item as unknown as SkillTreeItem];
             }
-            return this.getRootNodes();
+            const roots = this.getRootNodes();
+            if (this._loading) {
+                const loadingItem = new vscode.TreeItem('Fetching remote skills...', vscode.TreeItemCollapsibleState.None);
+                loadingItem.iconPath = new vscode.ThemeIcon('sync~spin');
+                roots.push(loadingItem as unknown as SkillTreeItem);
+            }
+            return roots;
         }
 
         if (element.itemType === 'marketplace') {

@@ -46,19 +46,29 @@ export function parseMcpJson(
 ): McpServerInfo[] {
     try {
         const parsed = JSON.parse(raw);
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-            return [];
-        }
-        return Object.entries(parsed).map(([name, config]) => ({
-            name,
-            config: config as ClaudeMcpServerConfig,
-            pluginName,
-            pluginVersion,
-            marketplace,
-        }));
+        return mcpObjectToServers(parsed, pluginName, pluginVersion, marketplace);
     } catch {
         return [];
     }
+}
+
+/** Convert a Record<string, ClaudeMcpServerConfig> object into McpServerInfo[] */
+export function mcpObjectToServers(
+    obj: unknown,
+    pluginName: string,
+    pluginVersion: string,
+    marketplace: string,
+): McpServerInfo[] {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+        return [];
+    }
+    return Object.entries(obj).map(([name, config]) => ({
+        name,
+        config: config as ClaudeMcpServerConfig,
+        pluginName,
+        pluginVersion,
+        marketplace,
+    }));
 }
 
 export async function discoverLocalPlugins(cachePath: string): Promise<PluginInfo[]> {
@@ -111,19 +121,30 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
             const skillsDir = vscode.Uri.joinPath(versionUri, pluginMeta.skills ?? 'skills');
             const skills = await discoverSkillsInDir(skillsDir, pluginMeta.name, latestVersion, marketplaceName);
 
-            // Discover MCP servers
+            // Discover MCP servers from plugin.json (inline object or path) with .mcp.json fallback
             let mcpServers: McpServerInfo[] = [];
-            try {
-                const mcpJsonUri = vscode.Uri.joinPath(versionUri, '.mcp.json');
-                const mcpRaw = await vscode.workspace.fs.readFile(mcpJsonUri);
-                mcpServers = parseMcpJson(
-                    Buffer.from(mcpRaw).toString('utf-8'),
-                    pluginMeta.name,
-                    latestVersion,
-                    marketplaceName,
-                );
-            } catch {
-                // No .mcp.json — that's fine
+            if (typeof pluginMeta.mcpServers === 'object') {
+                // Inline MCP server configs in plugin.json
+                mcpServers = mcpObjectToServers(pluginMeta.mcpServers, pluginMeta.name, latestVersion, marketplaceName);
+            } else {
+                const mcpPaths = typeof pluginMeta.mcpServers === 'string'
+                    ? [pluginMeta.mcpServers.replace(/^\.\//, ''), '.mcp.json']
+                    : ['.mcp.json'];
+                for (const mcpRelPath of mcpPaths) {
+                    try {
+                        const mcpJsonUri = vscode.Uri.joinPath(versionUri, mcpRelPath);
+                        const mcpRaw = await vscode.workspace.fs.readFile(mcpJsonUri);
+                        mcpServers = parseMcpJson(
+                            Buffer.from(mcpRaw).toString('utf-8'),
+                            pluginMeta.name,
+                            latestVersion,
+                            marketplaceName,
+                        );
+                        if (mcpServers.length > 0) { break; }
+                    } catch {
+                        // This path didn't work — try next
+                    }
+                }
             }
 
             plugins.push({

@@ -5,10 +5,10 @@ import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles, writeCompanionFiles } from './fileWriter';
 import { discoverLocalPlugins } from './localReader';
-import { discoverRemotePlugins, GitHubApiError } from './remoteReader';
+import { discoverRemotePlugins, GitHubApiError, RemoteDiscoveryResult, resetTokenCache } from './remoteReader';
 import { convertMcpServers } from './mcpConverter';
 import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
-import { analyzeCompatibility } from './compatAnalyzer';
+import { analyzeCompatibility, extractSkillDependencies } from './compatAnalyzer';
 import { convertWithLM } from './lmConverter';
 
 const META_ORCHESTRATOR_PATTERNS: RegExp[] = [
@@ -25,25 +25,60 @@ export class ImportService {
 
     constructor(private workspaceUri: vscode.Uri) {}
 
-    async discoverAllPlugins(cachePath: string, remoteRepos: string[]): Promise<DiscoveryResult> {
+    async discoverAllPlugins(
+        cachePath: string,
+        remoteRepos: string[],
+        onProgress?: (plugins: PluginInfo[]) => void,
+    ): Promise<DiscoveryResult> {
+        resetTokenCache();
         const localPlugins = await discoverLocalPlugins(cachePath);
-        const remoteResults = await Promise.allSettled(
-            remoteRepos.map(repo => discoverRemotePlugins(repo))
-        );
-
         const remotePlugins: PluginInfo[] = [];
         const errors: DiscoveryError[] = [];
-        for (let i = 0; i < remoteResults.length; i++) {
-            const result = remoteResults[i];
-            if (result.status === 'fulfilled') {
-                remotePlugins.push(...result.value);
-            } else {
-                const err = result.reason;
-                errors.push({
-                    repo: remoteRepos[i],
-                    message: err instanceof Error ? err.message : String(err),
-                    requiresAuth: err instanceof GitHubApiError && err.requiresAuth,
-                });
+
+        // Show local plugins immediately
+        if (onProgress && localPlugins.length > 0) {
+            onProgress(this.mergePluginLists(localPlugins, []));
+        }
+
+        const visited = new Set<string>();
+        const queue = [...remoteRepos];
+
+        while (queue.length > 0) {
+            const batch = queue.splice(0, queue.length).filter(repo => {
+                const key = repo.toLowerCase();
+                if (visited.has(key)) { return false; }
+                visited.add(key);
+                return true;
+            });
+
+            if (batch.length === 0) { break; }
+
+            const results = await Promise.allSettled(
+                batch.map(repo => discoverRemotePlugins(repo))
+            );
+
+            for (let i = 0; i < results.length; i++) {
+                const result = results[i];
+                if (result.status === 'fulfilled') {
+                    remotePlugins.push(...result.value.plugins);
+                    for (const dep of result.value.dependencies) {
+                        if (!visited.has(dep.toLowerCase())) {
+                            queue.push(dep);
+                        }
+                    }
+                } else {
+                    const err = result.reason;
+                    errors.push({
+                        repo: batch[i],
+                        message: err instanceof Error ? err.message : String(err),
+                        requiresAuth: err instanceof GitHubApiError && err.requiresAuth,
+                    });
+                }
+            }
+
+            // Show incremental results after each BFS batch
+            if (onProgress) {
+                onProgress(this.mergePluginLists(localPlugins, remotePlugins));
             }
         }
 
@@ -132,6 +167,39 @@ export class ImportService {
         if (choice !== 'Import') { return; }
 
         const conversion = await this.convertSkill(skill, outputFormats as OutputFormat[], useLm);
+
+        // Resolve dependencies before writing
+        const { missingSkills, missingMcpServers } = await this.resolveDependencies(skill);
+
+        if (missingSkills.length > 0 || missingMcpServers.length > 0) {
+            const parts: string[] = [];
+            if (missingSkills.length > 0) {
+                parts.push(`${missingSkills.length} skill(s): ${missingSkills.map(s => s.name).join(', ')}`);
+            }
+            if (missingMcpServers.length > 0) {
+                parts.push(`${missingMcpServers.length} MCP server(s): ${missingMcpServers.map(s => s.name).join(', ')}`);
+            }
+
+            const choice = await vscode.window.showInformationMessage(
+                `"${skill.name}" requires ${parts.join(' and ')}. Install dependencies?`,
+                { modal: true },
+                'Install All',
+                'Skip Dependencies'
+            );
+
+            if (!choice) { return; }
+
+            if (choice === 'Install All') {
+                for (const depSkill of missingSkills) {
+                    const depConversion = await this.convertSkill(depSkill, outputFormats as OutputFormat[], useLm);
+                    await this.writeSkillFiles(depSkill, depConversion, outputFormats, generateRegistry);
+                }
+                for (const server of missingMcpServers) {
+                    await this.importMcpServer(server);
+                }
+            }
+        }
+
         await this.writeSkillFiles(skill, conversion, outputFormats, generateRegistry);
         vscode.window.showInformationMessage(`Imported skill: ${skill.name}`);
     }
@@ -184,23 +252,69 @@ export class ImportService {
             return result;
         }
 
-        const conversions: Array<{ skill: SkillInfo; conversion: ConversionResult }> = [];
+        // Resolve cross-plugin skill dependencies
+        const manifest = await loadManifest(this.workspaceUri);
+        const knownNames = this.getKnownSkillNames();
+        const importingNames = new Set(compatibleSkills.map(s => s.name));
+        const depSkills: SkillInfo[] = [];
+        const depMcpServers: McpServerInfo[] = [];
+
         for (const skill of compatibleSkills) {
+            const deps = extractSkillDependencies(skill.content, knownNames);
+            for (const depName of deps) {
+                if (importingNames.has(depName)) { continue; }
+                if (isSkillImported(manifest, depName)) { continue; }
+                const depSkill = this.findSkillByName(depName);
+                if (depSkill && !depSkills.some(d => d.name === depName)) {
+                    const depCompat = analyzeCompatibility(depSkill, [], {}, {});
+                    if (depCompat.compatible) {
+                        depSkills.push(depSkill);
+                        importingNames.add(depName);
+                    }
+                }
+            }
+        }
+
+        // Find MCP servers from dependency plugins that aren't already included
+        const existingMcpNames = new Set((mcpServers ?? []).map(s => s.name));
+        for (const depSkill of depSkills) {
+            const depPlugin = this.allPlugins.find(p => p.skills.some(s => s.name === depSkill.name));
+            if (depPlugin?.mcpServers) {
+                for (const server of depPlugin.mcpServers) {
+                    if (!existingMcpNames.has(server.name) && !isMcpServerImported(manifest, server.name)) {
+                        depMcpServers.push(server);
+                        existingMcpNames.add(server.name);
+                    }
+                }
+            }
+        }
+
+        const allSkillsToImport = [...compatibleSkills, ...depSkills];
+        const allMcpServers = [...(mcpServers ?? []), ...depMcpServers];
+
+        const conversions: Array<{ skill: SkillInfo; conversion: ConversionResult }> = [];
+        for (const skill of allSkillsToImport) {
             conversions.push({
                 skill,
                 conversion: await this.convertSkill(skill, outputFormats as OutputFormat[], useLm),
             });
         }
 
-        const skillNames = compatibleSkills.map(s => s.name);
+        const skillNames = allSkillsToImport.map(s => s.name);
+        const depsNote = depSkills.length > 0
+            ? ` (+${depSkills.length} dependencies: ${depSkills.map(s => s.name).join(', ')})`
+            : '';
+        const mcpDepsNote = depMcpServers.length > 0
+            ? ` (+${depMcpServers.length} MCP dep(s): ${depMcpServers.map(s => s.name).join(', ')})`
+            : '';
         const summary = compatibleSkills.length <= 5
-            ? skillNames.join(', ')
-            : `${skillNames.slice(0, 3).join(', ')} and ${compatibleSkills.length - 3} more`;
+            ? compatibleSkills.map(s => s.name).join(', ')
+            : `${compatibleSkills.slice(0, 3).map(s => s.name).join(', ')} and ${compatibleSkills.length - 3} more`;
 
         const incompatibleNote = incompatibleCount > 0 ? ` (${incompatibleCount} incompatible, skipped)` : '';
 
         const choice = await vscode.window.showInformationMessage(
-            `Import ${compatibleSkills.length} skill(s)${incompatibleNote}: ${summary}?`,
+            `Import ${compatibleSkills.length} skill(s)${incompatibleNote}${depsNote}${mcpDepsNote}: ${summary}?`,
             { modal: true },
             'Import All'
         );
@@ -216,7 +330,7 @@ export class ImportService {
                 cancellable: true,
             },
             async (progress, token) => {
-                const total = compatibleSkills.length + (mcpServers?.length ?? 0);
+                const total = allSkillsToImport.length + allMcpServers.length;
                 const increment = total > 0 ? 100 / total : 100;
 
                 for (const { skill, conversion } of conversions) {
@@ -232,8 +346,8 @@ export class ImportService {
                     }
                 }
 
-                if (mcpServers?.length && !token.isCancellationRequested) {
-                    for (const server of mcpServers) {
+                if (allMcpServers.length > 0 && !token.isCancellationRequested) {
+                    for (const server of allMcpServers) {
                         if (token.isCancellationRequested) { break; }
                         progress.report({ message: `MCP: ${server.name}...`, increment });
 
@@ -518,6 +632,54 @@ export class ImportService {
         await saveManifest(this.workspaceUri, manifest);
 
         vscode.window.showInformationMessage(`Removed MCP server: ${serverName}`);
+    }
+
+    private getKnownSkillNames(): Set<string> {
+        const names = new Set<string>();
+        for (const plugin of this.allPlugins) {
+            for (const skill of plugin.skills) {
+                names.add(skill.name);
+            }
+        }
+        return names;
+    }
+
+    async resolveDependencies(skill: SkillInfo): Promise<{
+        missingSkills: SkillInfo[];
+        missingMcpServers: McpServerInfo[];
+    }> {
+        const manifest = await loadManifest(this.workspaceUri);
+        const missingSkills: SkillInfo[] = [];
+        const missingMcpServers: McpServerInfo[] = [];
+
+        // Find missing skill cross-references (filtered against known skills)
+        const knownNames = this.getKnownSkillNames();
+        const skillDeps = extractSkillDependencies(skill.content, knownNames);
+        for (const depName of skillDeps) {
+            if (depName === skill.name) { continue; }
+            if (isSkillImported(manifest, depName)) { continue; }
+            const depSkill = this.findSkillByName(depName);
+            if (depSkill) {
+                const depCompat = analyzeCompatibility(depSkill, [], {}, {});
+                if (depCompat.compatible) {
+                    missingSkills.push(depSkill);
+                }
+            }
+        }
+
+        // Find missing MCP servers from the same plugin
+        const plugin = this.allPlugins.find(p =>
+            p.skills.some(s => s.name === skill.name)
+        );
+        if (plugin?.mcpServers) {
+            for (const server of plugin.mcpServers) {
+                if (!isMcpServerImported(manifest, server.name)) {
+                    missingMcpServers.push(server);
+                }
+            }
+        }
+
+        return { missingSkills, missingMcpServers };
     }
 
     private findSkillByName(name: string): SkillInfo | undefined {

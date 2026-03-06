@@ -95,13 +95,20 @@ export interface PluginJson {
     agents?: string;
     commands?: string;
     hooks?: string;
+    mcpServers?: string | Record<string, ClaudeMcpServerConfig>;
+}
+
+export interface MarketplaceSourceUrl {
+    source: string;
+    url: string;
+    ref?: string;
 }
 
 export interface MarketplacePluginEntry {
     name: string;
     description: string;
     version: string;
-    source?: string;
+    source?: string | MarketplaceSourceUrl;
     path?: string;
     author?: { name: string; email?: string };
 }
@@ -111,11 +118,13 @@ export interface MarketplaceJson {
     description?: string;
     owner?: { name: string; email?: string };
     plugins?: MarketplacePluginEntry[];
+    dependencies?: string[];
     // Some repos nest under a "marketplace" key
     marketplace?: {
         name?: string;
         description?: string;
         plugins?: MarketplacePluginEntry[];
+        dependencies?: string[];
     };
 }
 

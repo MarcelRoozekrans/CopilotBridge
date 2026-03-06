@@ -4,6 +4,7 @@ export interface CompatResult {
     compatible: boolean;
     issues: string[];
     mcpDependencies: string[];
+    skillDependencies: string[];
 }
 
 interface BlockingPattern {
@@ -25,6 +26,46 @@ const MCP_DEPENDENCY_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
     { pattern: /\bupdate_memory\b/, reason: 'Uses MCP memory server' },
     { pattern: /\bdelete_memory\b/, reason: 'Uses MCP memory server' },
 ];
+
+/** Patterns that extract candidate skill names from content (generic, not tied to any namespace) */
+const SKILL_REF_PATTERNS: RegExp[] = [
+    // namespace:skill-name cross-references (any prefix, e.g. superpowers:tdd, mytools:lint)
+    /\b[\w-]+:([\w-]+)/g,
+    // .github/instructions/skill-name.instructions.md file path references
+    /\.github\/instructions\/([\w-]+)\.instructions\.md/g,
+    // .github/prompts/skill-name.prompt.md file path references
+    /\.github\/prompts\/([\w-]+)\.prompt\.md/g,
+    // SUB-SKILL directives (e.g. "REQUIRED SUB-SKILL: Use skill-name")
+    /(?:REQUIRED\s+)?SUB-SKILL[:\s]+(?:Use\s+)?(?:[\w-]+:)?([\w-]+)/gi,
+];
+
+/**
+ * Extract candidate skill references from content.
+ * Returns raw candidates — callers should filter against known skill names
+ * to avoid false positives.
+ */
+export function extractSkillReferences(content: string): string[] {
+    const refs = new Set<string>();
+    for (const pattern of SKILL_REF_PATTERNS) {
+        const regex = new RegExp(pattern.source, pattern.flags);
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+            refs.add(match[1]);
+        }
+    }
+    return Array.from(refs);
+}
+
+/**
+ * Extract skill dependencies by matching content references against known skill names.
+ * When knownSkillNames is provided, only returns matches that exist in that set.
+ * When omitted, returns all candidates (for backward compatibility / unit testing).
+ */
+export function extractSkillDependencies(content: string, knownSkillNames?: Set<string>): string[] {
+    const refs = extractSkillReferences(content);
+    if (!knownSkillNames) { return refs; }
+    return refs.filter(name => knownSkillNames.has(name));
+}
 
 export function analyzeCompatibility(
     skill: SkillInfo,
@@ -48,9 +89,12 @@ export function analyzeCompatibility(
         }
     }
 
+    const skillDependencies = extractSkillDependencies(content);
+
     return {
         compatible: issues.length === 0,
         issues,
         mcpDependencies,
+        skillDependencies,
     };
 }

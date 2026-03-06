@@ -204,9 +204,18 @@ export async function activate(context: vscode.ExtensionContext) {
     async function refreshAll() {
         treeProvider.setLoading();
         const { cachePath, remoteRepos } = getConfig();
-        const { plugins, errors } = await importService.discoverAllPlugins(cachePath, remoteRepos);
+        let manifest = await loadManifest(workspaceUri);
+
+        const { plugins, errors } = await importService.discoverAllPlugins(
+            cachePath,
+            remoteRepos,
+            (partialPlugins) => {
+                importService.setPlugins(partialPlugins);
+                treeProvider.setData(partialPlugins, manifest);
+            },
+        );
+
         importService.setPlugins(plugins);
-        const manifest = await loadManifest(workspaceUri);
         treeProvider.setData(plugins, manifest);
 
         if (errors.length > 0) {
