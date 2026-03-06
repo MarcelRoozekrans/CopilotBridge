@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.16.1...copilot-skill-bridge-v0.17.0) (2026-03-06)
+
+
+### Features
+
+* add companionFiles field to SkillInfo type ([33dd868](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/33dd8682b34fd26843e388b6200e4a514fa6b794))
+* add companionFiles to SkillInfo and add types test ([fdca6d7](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/fdca6d72509eaa1225e75d0888df8a89df9ce4f8))
+* companion files, CLI conversion, and subagent fix ([5d78144](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/5d78144d32e2bac20c7f0218be48c8d1741341ff))
+* discover companion .md files from remote GitHub repos ([d6c5db7](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/d6c5db728dcf5d865b5fdb7be38976013667a99d))
+* discover companion .md files in local skill directories ([3ca3be4](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/3ca3be41c63375d74b6391a29a89c5bfa9a8c900))
+* write and clean up companion files on skill import/removal ([a776c74](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/a776c74dd497e85542e8fd45c74b3a686cb25bd9))
+
 ## [0.16.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.16.0...copilot-skill-bridge-v0.16.1) (2026-03-05)
 
 
