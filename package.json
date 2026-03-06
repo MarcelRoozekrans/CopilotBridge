@@ -63,7 +63,7 @@
       },
       {
         "command": "copilotSkillBridge.importAllSkills",
-        "title": "Import All Skills",
+        "title": "Import All",
         "icon": "$(cloud-download)"
       },
       {
@@ -129,6 +129,11 @@
         "command": "copilotSkillBridge.removeAllSkills",
         "title": "Remove All from Project",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotSkillBridge.importAllFromMarketplace",
+        "title": "Import All",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "copilotSkillBridge.removeAllFromMarketplace",
@@ -222,6 +227,11 @@
           "command": "copilotSkillBridge.unembedSkill",
           "when": "view == skillBridgeExplorer && viewItem == skill-synced-embedded",
           "group": "2_embed"
+        },
+        {
+          "command": "copilotSkillBridge.importAllFromMarketplace",
+          "when": "view == skillBridgeExplorer && viewItem =~ /^marketplace/",
+          "group": "1_actions"
         },
         {
           "command": "copilotSkillBridge.removeAllFromMarketplace",
