@@ -120,7 +120,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
     const plugins: PluginInfo[] = [];
     let dependencies: string[] = [];
 
-    let pluginEntries: Array<{ name: string; description: string; version: string; source: string; mcpField?: PluginJson['mcpServers'] }> = [];
+    let pluginEntries: Array<{ name: string; description: string; version: string; source: string; mcpField?: PluginJson['mcpServers']; mcpFieldChecked?: boolean }> = [];
 
     try {
         const marketplaceContent = await fetchFileContent(repo, '.claude-plugin/marketplace.json');
@@ -142,6 +142,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                 version: pluginMeta.version,
                 source: './',
                 mcpField: pluginMeta.mcpServers,
+                mcpFieldChecked: true,
             }];
         } catch (err2) {
             if (err2 instanceof GitHubApiError && err2.requiresAuth) { throw err2; }
@@ -152,8 +153,8 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
     for (const entry of pluginEntries) {
         const basePath = entry.source === './' ? '' : entry.source.replace(/\/$/, '') + '/';
 
-        // Try to read plugin.json to get mcpServers config if not already set
-        if (!entry.mcpField) {
+        // Try to read plugin.json to get mcpServers config if not already checked
+        if (!entry.mcpField && !entry.mcpFieldChecked) {
             try {
                 const pjContent = await fetchFileContent(repo, basePath + '.claude-plugin/plugin.json');
                 const pj: PluginJson = JSON.parse(pjContent);
