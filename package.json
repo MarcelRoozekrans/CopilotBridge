@@ -127,12 +127,17 @@
       },
       {
         "command": "copilotSkillBridge.removeAllSkills",
-        "title": "Remove All from Project",
+        "title": "Remove All Skills from Project",
         "icon": "$(trash)"
       },
       {
+        "command": "copilotSkillBridge.importAllFromMarketplace",
+        "title": "Import All Skills",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "copilotSkillBridge.removeAllFromMarketplace",
-        "title": "Remove All from Project",
+        "title": "Remove All Skills from Project",
         "icon": "$(trash)"
       },
       {
@@ -222,6 +227,11 @@
           "command": "copilotSkillBridge.unembedSkill",
           "when": "view == skillBridgeExplorer && viewItem == skill-synced-embedded",
           "group": "2_embed"
+        },
+        {
+          "command": "copilotSkillBridge.importAllFromMarketplace",
+          "when": "view == skillBridgeExplorer && viewItem =~ /^marketplace/",
+          "group": "1_actions"
         },
         {
           "command": "copilotSkillBridge.removeAllFromMarketplace",

@@ -106,15 +106,21 @@ export async function activate(context: vscode.ExtensionContext) {
                 if (debounceTimer) { clearTimeout(debounceTimer); }
 
                 let repo: string | undefined;
+                const typedValue = quickPick.value.trim();
+                const isValidRepo = /^[\w.-]+\/[\w.-]+$/.test(typedValue);
 
                 if (selected?.label === MANUAL_ENTRY_LABEL) {
                     repo = await vscode.window.showInputBox({
                         prompt: 'Enter GitHub repo (owner/name)',
                         placeHolder: 'owner/repo',
+                        value: isValidRepo ? typedValue : undefined,
                         validateInput: (value) => {
                             return /^[\w.-]+\/[\w.-]+$/.test(value) ? null : 'Format: owner/repo-name';
                         },
                     });
+                } else if (isValidRepo && (!selected || selected.label !== typedValue)) {
+                    // User typed a valid owner/repo and pressed Enter — use it directly
+                    repo = typedValue;
                 } else if (selected) {
                     repo = selected.label;
                 }
@@ -159,6 +165,7 @@ export async function activate(context: vscode.ExtensionContext) {
             'copilotSkillBridge.embedSkill',
             'copilotSkillBridge.unembedSkill',
             'copilotSkillBridge.removeAllSkills',
+            'copilotSkillBridge.importAllFromMarketplace',
             'copilotSkillBridge.removeAllFromMarketplace',
         ];
         for (const cmd of workspaceCommands) {
@@ -455,6 +462,25 @@ export async function activate(context: vscode.ExtensionContext) {
             importService.setPlugins(remaining);
             const updatedManifest = await loadManifest(workspaceUri);
             treeProvider.setData(remaining, updatedManifest);
+        }),
+
+        vscode.commands.registerCommand('copilotSkillBridge.importAllFromMarketplace', async (item?: SkillTreeItem) => {
+            const repo = item?.marketplaceRepo;
+            if (!repo) {
+                vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
+                return;
+            }
+            const plugins = importService.getPluginsByMarketplace(repo);
+            const allSkills = plugins.flatMap(p => p.skills);
+            const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
+            const { outputFormats, generateRegistry, useLmConversion } = getConfig();
+            try {
+                await importService.importAllSkills(allSkills, outputFormats, generateRegistry, allMcpServers, useLmConversion);
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Import All failed: ${msg}`);
+            }
+            await refreshAll();
         }),
 
         vscode.commands.registerCommand('copilotSkillBridge.removeAllFromMarketplace', async (item?: SkillTreeItem) => {
