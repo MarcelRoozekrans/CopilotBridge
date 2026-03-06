@@ -191,4 +191,21 @@ describe('parsePluginJson mcpServers formats', () => {
         assert.strictEqual(typeof result.mcpServers, 'string');
         assert.strictEqual(result.mcpServers, './.mcp.json');
     });
+
+    it('should parse snake_case mcp_servers object from plugin.json', () => {
+        const json = JSON.stringify({
+            name: 'roslyn-codegraph',
+            description: 'Code graph intelligence',
+            version: '1.0.0',
+            mcp_servers: {
+                'roslyn-codegraph': { command: 'bootstrap', args: [] },
+            },
+        });
+        const result = parsePluginJson(json);
+        assert.strictEqual(typeof result.mcp_servers, 'object');
+        const field = result.mcpServers ?? result.mcp_servers;
+        const servers = mcpObjectToServers(field, result.name, result.version, 'test');
+        assert.strictEqual(servers.length, 1);
+        assert.strictEqual(servers[0].name, 'roslyn-codegraph');
+    });
 });

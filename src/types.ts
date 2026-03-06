@@ -96,6 +96,8 @@ export interface PluginJson {
     commands?: string;
     hooks?: string;
     mcpServers?: string | Record<string, ClaudeMcpServerConfig>;
+    // snake_case variant used by some plugins
+    mcp_servers?: string | Record<string, ClaudeMcpServerConfig>;
 }
 
 export interface MarketplaceSourceUrl {

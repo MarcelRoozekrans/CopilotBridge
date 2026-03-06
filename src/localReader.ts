@@ -123,12 +123,13 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
 
             // Discover MCP servers from plugin.json (inline object or path) with .mcp.json fallback
             let mcpServers: McpServerInfo[] = [];
-            if (typeof pluginMeta.mcpServers === 'object') {
+            const mcpField = pluginMeta.mcpServers ?? pluginMeta.mcp_servers;
+            if (typeof mcpField === 'object') {
                 // Inline MCP server configs in plugin.json
-                mcpServers = mcpObjectToServers(pluginMeta.mcpServers, pluginMeta.name, latestVersion, marketplaceName);
+                mcpServers = mcpObjectToServers(mcpField, pluginMeta.name, latestVersion, marketplaceName);
             } else {
-                const mcpPaths = typeof pluginMeta.mcpServers === 'string'
-                    ? [pluginMeta.mcpServers.replace(/^\.\//, ''), '.mcp.json']
+                const mcpPaths = typeof mcpField === 'string'
+                    ? [mcpField.replace(/^\.\//, ''), '.mcp.json']
                     : ['.mcp.json'];
                 for (const mcpRelPath of mcpPaths) {
                     try {

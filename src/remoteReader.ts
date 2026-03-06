@@ -157,7 +157,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                 description: pluginMeta.description,
                 version: pluginMeta.version,
                 source: './',
-                mcpField: pluginMeta.mcpServers,
+                mcpField: pluginMeta.mcpServers ?? pluginMeta.mcp_servers,
                 mcpFieldChecked: true,
             }];
         } catch (err2) {
@@ -174,7 +174,8 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
             try {
                 const pjContent = await fetchFileContent(repo, basePath + '.claude-plugin/plugin.json');
                 const pj: PluginJson = JSON.parse(pjContent);
-                if (pj.mcpServers) { entry.mcpField = pj.mcpServers; }
+                const mcpField = pj.mcpServers ?? pj.mcp_servers;
+                if (mcpField) { entry.mcpField = mcpField; }
             } catch { /* no plugin.json — that's fine */ }
         }
 
