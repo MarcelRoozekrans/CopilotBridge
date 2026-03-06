@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult, DiscoveryResult, DiscoveryError } from './types';
+import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult, DiscoveryResult, DiscoveryError, DependencyGraph } from './types';
 import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry, OutputFormat } from './converter';
 import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported } from './stateManager';
@@ -33,23 +33,29 @@ function isMetaOrchestratorSkill(skill: SkillInfo): boolean {
 
 export class ImportService {
     private allPlugins: PluginInfo[] = [];
+    private _depGraph: DependencyGraph = { edges: new Map(), roots: [] };
 
     constructor(private workspaceUri: vscode.Uri) {}
+
+    getDepGraph(): DependencyGraph {
+        return this._depGraph;
+    }
 
     async discoverAllPlugins(
         cachePath: string,
         remoteRepos: string[],
-        onProgress?: (plugins: PluginInfo[]) => void,
+        onProgress?: (plugins: PluginInfo[], depGraph?: DependencyGraph) => void,
         remoteFetcher: (repo: string) => Promise<RemoteDiscoveryResult> = discoverRemotePlugins,
     ): Promise<DiscoveryResult> {
         resetTokenCache();
         const localPlugins = await discoverLocalPlugins(cachePath);
         const remotePlugins: PluginInfo[] = [];
         const errors: DiscoveryError[] = [];
+        const depGraph: DependencyGraph = { edges: new Map(), roots: [...remoteRepos] };
 
         // Show local plugins immediately
         if (onProgress && localPlugins.length > 0) {
-            onProgress(this.mergePluginLists(localPlugins, []));
+            onProgress(this.mergePluginLists(localPlugins, []), depGraph);
         }
 
         const visited = new Set<string>();
@@ -78,6 +84,10 @@ export class ImportService {
                     log(`  ${batch[i]}: ${pluginNames.length} plugins [${pluginNames.join(', ')}], ${result.value.dependencies.length} deps [${result.value.dependencies.join(', ')}]`);
                     remotePlugins.push(...result.value.plugins);
                     for (const dep of result.value.dependencies) {
+                        const parentEdges = depGraph.edges.get(batch[i]) ?? [];
+                        parentEdges.push(dep);
+                        depGraph.edges.set(batch[i], parentEdges);
+
                         if (!visited.has(dep.toLowerCase())) {
                             queue.push(dep);
                         }
@@ -97,14 +107,17 @@ export class ImportService {
 
             // Show incremental results after each BFS batch
             if (onProgress) {
-                onProgress(this.mergePluginLists(localPlugins, remotePlugins));
+                onProgress(this.mergePluginLists(localPlugins, remotePlugins), depGraph);
             }
         }
         log(`BFS complete: ${remotePlugins.length} total remote plugins, ${errors.length} errors`);
 
+        this._depGraph = depGraph;
+
         return {
             plugins: this.mergePluginLists(localPlugins, remotePlugins),
             errors,
+            dependencyGraph: depGraph,
         };
     }
 

@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { SkillInfo, PluginInfo, SkillStatus, McpServerInfo } from './types';
+import { SkillInfo, PluginInfo, SkillStatus, McpServerInfo, DependencyGraph } from './types';
 import { BridgeManifest } from './types';
 import { computeHash, isSkillImported, isSkillOutdated } from './stateManager';
 import { analyzeCompatibility } from './compatAnalyzer';
 
-export type TreeItemType = 'marketplace' | 'plugin' | 'skill' | 'mcpGroup' | 'mcpServer';
+export type TreeItemType = 'marketplace' | 'plugin' | 'skill' | 'mcpGroup' | 'mcpServer' | 'dependencyGroup';
 
 export class SkillTreeItem extends vscode.TreeItem {
     constructor(
@@ -67,6 +67,11 @@ export class SkillTreeItem extends vscode.TreeItem {
             this.iconPath = new vscode.ThemeIcon('plug');
             this.contextValue = 'mcpGroup';
             this.tooltip = 'MCP servers provided by this plugin';
+        } else if (itemType === 'dependencyGroup') {
+            this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+            this.iconPath = new vscode.ThemeIcon('library');
+            this.contextValue = 'dependencyGroup';
+            this.tooltip = 'Dependency repositories';
         } else if (itemType === 'mcpServer') {
             this.contextValue = `mcpServer-${status}`;
             const serverDetail = mcpServerInfo?.config.command
@@ -91,10 +96,12 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
     private plugins: PluginInfo[] = [];
     private manifest: BridgeManifest = { skills: {}, mcpServers: {}, marketplaces: [], settings: { checkInterval: 86400, autoAcceptUpdates: false } };
     private _loading = false;
+    private depGraph: DependencyGraph = { edges: new Map(), roots: [] };
 
-    setData(plugins: PluginInfo[], manifest: BridgeManifest) {
+    setData(plugins: PluginInfo[], manifest: BridgeManifest, depGraph?: DependencyGraph) {
         this.plugins = plugins;
         this.manifest = manifest;
+        this.depGraph = depGraph ?? { edges: new Map(), roots: [] };
         this._loading = false;
         this._onDidChangeTreeData.fire();
     }
@@ -130,9 +137,24 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
 
         if (element.itemType === 'marketplace') {
             const repo = element.marketplaceRepo!;
-            return this.plugins
+            const children = this.plugins
                 .filter(p => p.marketplace === repo)
                 .map(p => new SkillTreeItem(p.name, 'plugin', p));
+
+            const depRepos = this.depGraph.edges.get(repo) ?? [];
+            if (depRepos.length > 0) {
+                const depNode = new SkillTreeItem('Dependencies', 'dependencyGroup', undefined, undefined, undefined, undefined, undefined, repo);
+                depNode.description = `${depRepos.length} repo${depRepos.length > 1 ? 's' : ''}`;
+                children.push(depNode);
+            }
+
+            return children;
+        }
+
+        if (element.itemType === 'dependencyGroup') {
+            const repo = element.marketplaceRepo!;
+            const depRepos = this.depGraph.edges.get(repo) ?? [];
+            return this.getDependencyChildren(depRepos);
         }
 
         if (element.itemType === 'plugin' && element.pluginInfo) {
@@ -160,13 +182,29 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
             byMarketplace.set(key, list);
         }
 
+        // Collect all repos that appear as dependency targets
+        const depTargets = new Set<string>();
+        if (this.depGraph.roots.length > 0) {
+            for (const deps of this.depGraph.edges.values()) {
+                for (const dep of deps) {
+                    depTargets.add(dep);
+                }
+            }
+        }
+
         const items: SkillTreeItem[] = [];
         for (const [repo, plugins] of byMarketplace) {
-            if (plugins.length === 1) {
+            // Hide dependency repos from root level
+            if (depTargets.has(repo)) { continue; }
+
+            const hasDeps = (this.depGraph.edges.get(repo)?.length ?? 0) > 0;
+
+            if (plugins.length === 1 && !hasDeps) {
                 items.push(new SkillTreeItem(plugins[0].name, 'plugin', plugins[0]));
             } else {
+                // Promote single-plugin roots with deps to marketplace node so deps can be children
                 const node = new SkillTreeItem(repo, 'marketplace', undefined, undefined, undefined, undefined, undefined, repo);
-                node.description = `${plugins.length} plugins`;
+                node.description = `${plugins.length} plugin${plugins.length > 1 ? 's' : ''}`;
                 const allLocal = plugins.every(p => p.source === 'local');
                 if (allLocal) { node.contextValue = 'marketplace-local'; }
                 items.push(node);
@@ -208,6 +246,12 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
                 item.iconPath = new vscode.ThemeIcon('pin', new vscode.ThemeColor('testing.iconPassed'));
                 item.description = 'always active';
                 item.contextValue = 'skill-synced-embedded';
+            } else {
+                // Show cross-skill dependencies in description
+                const crossDeps = compat.skillDependencies.filter(d => d !== skill.name);
+                if (crossDeps.length > 0) {
+                    item.description = `${item.description} \u2192 ${crossDeps.join(', ')}`;
+                }
             }
 
             children.push(item);
@@ -219,5 +263,23 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
         }
 
         return children;
+    }
+
+    private getDependencyChildren(depRepos: string[]): SkillTreeItem[] {
+        const items: SkillTreeItem[] = [];
+        for (const depRepo of depRepos) {
+            const plugins = this.plugins.filter(p => p.marketplace === depRepo);
+            if (plugins.length === 0) {
+                // All redirects or failed fetches — skip
+                continue;
+            } else if (plugins.length === 1) {
+                items.push(new SkillTreeItem(plugins[0].name, 'plugin', plugins[0]));
+            } else {
+                const node = new SkillTreeItem(depRepo, 'marketplace', undefined, undefined, undefined, undefined, undefined, depRepo);
+                node.description = `${plugins.length} plugin${plugins.length > 1 ? 's' : ''}`;
+                items.push(node);
+            }
+        }
+        return items;
     }
 }

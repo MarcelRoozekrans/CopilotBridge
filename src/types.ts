@@ -146,7 +146,13 @@ export interface DiscoveryError {
     requiresAuth: boolean;
 }
 
+export interface DependencyGraph {
+    edges: Map<string, string[]>;
+    roots: string[];
+}
+
 export interface DiscoveryResult {
     plugins: PluginInfo[];
     errors: DiscoveryError[];
+    dependencyGraph: DependencyGraph;
 }

@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { SkillBridgeTreeProvider, SkillTreeItem } from '../../treeView';
-import { PluginInfo, BridgeManifest } from '../../types';
+import { PluginInfo, BridgeManifest, DependencyGraph } from '../../types';
 
 function makeManifest(overrides: Partial<BridgeManifest> = {}): BridgeManifest {
     return {
@@ -492,5 +492,191 @@ describe('TreeView embedded skills', () => {
         const skill = children.find(c => c.itemType === 'skill');
         assert.strictEqual(skill!.contextValue, 'skill-synced');
         assert.strictEqual(skill!.description, 'synced');
+    });
+});
+
+describe('TreeView dependency grouping', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should accept depGraph in setData', () => {
+        const depGraph: DependencyGraph = { edges: new Map(), roots: ['obra/superpowers'] };
+        provider.setData([makePlugin()], makeManifest(), depGraph);
+        const roots = provider.getChildren(undefined);
+        assert.ok(roots.length > 0);
+    });
+
+    it('should hide dependency repos from root level', () => {
+        const plugins = [
+            makePlugin({ name: 'main-plugin', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'dep-plugin', marketplace: 'dep/repo' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map([['obra/superpowers', ['dep/repo']]]),
+            roots: ['obra/superpowers'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        const roots = provider.getChildren(undefined);
+        const labels = roots.map(r => r.label);
+        assert.ok(!labels.includes('dep-plugin'), 'dep repo should not appear at root');
+        assert.ok(!labels.includes('dep/repo'), 'dep repo marketplace should not appear at root');
+    });
+
+    it('should show dependency repos from root when no depGraph provided', () => {
+        const plugins = [
+            makePlugin({ name: 'main-plugin', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'dep-plugin', marketplace: 'dep/repo' }),
+        ];
+        provider.setData(plugins, makeManifest());
+
+        const roots = provider.getChildren(undefined);
+        assert.strictEqual(roots.length, 2, 'Both plugins should appear at root without depGraph');
+    });
+
+    it('should show Dependencies folder under marketplace with deps', () => {
+        const plugins = [
+            makePlugin({ name: 'main-plugin', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'dep-plugin', marketplace: 'dep/repo' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map([['obra/superpowers', ['dep/repo']]]),
+            roots: ['obra/superpowers'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        const roots = provider.getChildren(undefined);
+        // Single-plugin root with deps gets promoted to marketplace
+        const marketplace = roots.find(r => r.itemType === 'marketplace');
+        assert.ok(marketplace, 'Should have a marketplace node');
+
+        const children = provider.getChildren(marketplace!);
+        const depGroup = children.find(c => c.itemType === 'dependencyGroup');
+        assert.ok(depGroup, 'Should have a Dependencies folder');
+        assert.strictEqual(depGroup!.label, 'Dependencies');
+        assert.strictEqual(depGroup!.description, '1 repo');
+    });
+
+    it('should show dependency repos inside Dependencies folder', () => {
+        const plugins = [
+            makePlugin({ name: 'main-plugin', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'dep-plugin', marketplace: 'dep/repo' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map([['obra/superpowers', ['dep/repo']]]),
+            roots: ['obra/superpowers'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        const roots = provider.getChildren(undefined);
+        const marketplace = roots.find(r => r.itemType === 'marketplace')!;
+        const children = provider.getChildren(marketplace);
+        const depGroup = children.find(c => c.itemType === 'dependencyGroup')!;
+        const depChildren = provider.getChildren(depGroup);
+        assert.strictEqual(depChildren.length, 1);
+        assert.strictEqual(depChildren[0].label, 'dep-plugin');
+        assert.strictEqual(depChildren[0].itemType, 'plugin');
+    });
+
+    it('should not show Dependencies folder when marketplace has no deps', () => {
+        const plugins = [
+            makePlugin({ name: 'a', marketplace: 'user/repo' }),
+            makePlugin({ name: 'b', marketplace: 'user/repo' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map(),
+            roots: ['user/repo'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        const roots = provider.getChildren(undefined);
+        const marketplace = roots.find(r => r.itemType === 'marketplace')!;
+        const children = provider.getChildren(marketplace);
+        const depGroup = children.find(c => c.itemType === 'dependencyGroup');
+        assert.strictEqual(depGroup, undefined, 'No Dependencies folder when no deps');
+    });
+
+    it('should promote single-plugin root with deps to marketplace node', () => {
+        const plugins = [
+            makePlugin({ name: 'superpowers', marketplace: 'obra/superpowers' }),
+            makePlugin({ name: 'dep-plugin', marketplace: 'dep/repo' }),
+        ];
+        const depGraph: DependencyGraph = {
+            edges: new Map([['obra/superpowers', ['dep/repo']]]),
+            roots: ['obra/superpowers'],
+        };
+        provider.setData(plugins, makeManifest(), depGraph);
+
+        const roots = provider.getChildren(undefined);
+        assert.strictEqual(roots.length, 1, 'Only one root (dep hidden)');
+        assert.strictEqual(roots[0].itemType, 'marketplace', 'Single-plugin root with deps should be promoted to marketplace');
+        assert.strictEqual(roots[0].marketplaceRepo, 'obra/superpowers');
+    });
+});
+
+describe('TreeView skill dependency descriptions', () => {
+    let provider: SkillBridgeTreeProvider;
+
+    beforeEach(() => {
+        provider = new SkillBridgeTreeProvider();
+    });
+
+    it('should show cross-skill references in description', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'systematic-debugging',
+                description: 'Debug systematically',
+                content: 'Use superpowers:test-driven-development and superpowers:brainstorming to help.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.ok(skill, 'Should have a skill');
+        assert.ok(
+            skill!.description?.toString().includes('test-driven-development'),
+            `Description should include cross-ref, got: ${skill!.description}`
+        );
+        assert.ok(
+            skill!.description?.toString().includes('brainstorming'),
+            `Description should include brainstorming, got: ${skill!.description}`
+        );
+    });
+
+    it('should not add dependency text for skills without cross-references', () => {
+        const plugin = makePlugin({
+            name: 'test-plugin',
+            marketplace: 'test',
+            skills: [{
+                name: 'tdd',
+                description: 'TDD',
+                content: 'Write tests first, then implement.',
+                pluginName: 'test-plugin',
+                pluginVersion: '1.0.0',
+                marketplace: 'test',
+                source: 'local',
+            }],
+        });
+        provider.setData([plugin], makeManifest());
+
+        const pluginItem = provider.getChildren(undefined)[0];
+        const children = provider.getChildren(pluginItem);
+        const skill = children.find(c => c.itemType === 'skill');
+        assert.ok(skill, 'Should have a skill');
+        assert.ok(
+            !skill!.description?.toString().includes('\u2192'),
+            `Description should not have arrow for no deps, got: ${skill!.description}`
+        );
     });
 });

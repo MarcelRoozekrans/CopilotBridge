@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import { ImportService } from '../../importService';
-import { SkillInfo, McpServerInfo, PluginInfo } from '../../types';
+import { SkillInfo, McpServerInfo, PluginInfo, DependencyGraph } from '../../types';
 import { RemoteDiscoveryResult } from '../../remoteReader';
 
 function makeSkill(overrides: Partial<SkillInfo> = {}): SkillInfo {
@@ -853,5 +853,117 @@ describe('ImportService.discoverAllPlugins BFS dependency resolution', () => {
         assert.ok(progressCalls.length >= 2, `Expected at least 2 progress calls, got ${progressCalls.length}`);
         assert.strictEqual(progressCalls[0], 1, 'First batch should have 1 plugin');
         assert.strictEqual(progressCalls[1], 2, 'Second batch should have 2 plugins');
+    });
+
+    it('should return dependencyGraph with edges from BFS', async () => {
+        const responses: Record<string, RemoteDiscoveryResult> = {
+            'user/marketplace-a': {
+                plugins: [makePlugin('plugin-a', 'user/marketplace-a', ['skill-a'])],
+                dependencies: ['user/marketplace-b'],
+            },
+            'user/marketplace-b': {
+                plugins: [makePlugin('plugin-b', 'user/marketplace-b', ['skill-b'])],
+                dependencies: ['user/marketplace-c'],
+            },
+            'user/marketplace-c': {
+                plugins: [makePlugin('plugin-c', 'user/marketplace-c', ['skill-c'])],
+                dependencies: [],
+            },
+        };
+
+        const fetcher = async (repo: string): Promise<RemoteDiscoveryResult> => {
+            const result = responses[repo];
+            if (!result) { throw new Error(`Unknown repo: ${repo}`); }
+            return result;
+        };
+
+        const { dependencyGraph } = await service.discoverAllPlugins(
+            '/nonexistent/cache', ['user/marketplace-a'], undefined, fetcher,
+        );
+
+        assert.deepStrictEqual(dependencyGraph.roots, ['user/marketplace-a']);
+        assert.deepStrictEqual(dependencyGraph.edges.get('user/marketplace-a'), ['user/marketplace-b']);
+        assert.deepStrictEqual(dependencyGraph.edges.get('user/marketplace-b'), ['user/marketplace-c']);
+        assert.strictEqual(dependencyGraph.edges.has('user/marketplace-c'), false);
+    });
+
+    it('should include partial depGraph in onProgress callbacks', async () => {
+        const responses: Record<string, RemoteDiscoveryResult> = {
+            'user/marketplace-a': {
+                plugins: [makePlugin('plugin-a', 'user/marketplace-a')],
+                dependencies: ['user/marketplace-b'],
+            },
+            'user/marketplace-b': {
+                plugins: [makePlugin('plugin-b', 'user/marketplace-b')],
+                dependencies: [],
+            },
+        };
+
+        const fetcher = async (repo: string): Promise<RemoteDiscoveryResult> => {
+            const result = responses[repo];
+            if (!result) { throw new Error(`Unknown repo: ${repo}`); }
+            return result;
+        };
+
+        const progressCalls: Array<{ pluginCount: number; hasGraph: boolean; roots: string[] }> = [];
+        await service.discoverAllPlugins(
+            '/nonexistent/cache',
+            ['user/marketplace-a'],
+            (plugins, depGraph) => {
+                progressCalls.push({
+                    pluginCount: plugins.length,
+                    hasGraph: !!depGraph,
+                    roots: depGraph?.roots ?? [],
+                });
+            },
+            fetcher,
+        );
+
+        assert.ok(progressCalls.length >= 1, 'Should have received at least one progress callback');
+        // All callbacks should include the graph
+        for (const call of progressCalls) {
+            assert.strictEqual(call.hasGraph, true, 'All progress callbacks should include depGraph');
+            assert.deepStrictEqual(call.roots, ['user/marketplace-a']);
+        }
+    });
+
+    it('should record redirect repos as edges in dependencyGraph', async () => {
+        const responses: Record<string, RemoteDiscoveryResult> = {
+            'user/extensions': {
+                plugins: [makePlugin('my-plugin', 'user/extensions', ['my-skill'])],
+                dependencies: ['obra/superpowers-marketplace'],
+            },
+            'obra/superpowers-marketplace': {
+                plugins: [],
+                dependencies: ['obra/superpowers', 'obra/superpowers-chrome'],
+            },
+            'obra/superpowers': {
+                plugins: [makePlugin('superpowers', 'obra/superpowers', ['tdd'])],
+                dependencies: [],
+            },
+            'obra/superpowers-chrome': {
+                plugins: [makePlugin('superpowers-chrome', 'obra/superpowers-chrome', ['browsing'])],
+                dependencies: [],
+            },
+        };
+
+        const fetcher = async (repo: string): Promise<RemoteDiscoveryResult> => {
+            const result = responses[repo];
+            if (!result) { throw new Error(`Unknown repo: ${repo}`); }
+            return result;
+        };
+
+        const { dependencyGraph } = await service.discoverAllPlugins(
+            '/nonexistent/cache', ['user/extensions'], undefined, fetcher,
+        );
+
+        assert.deepStrictEqual(dependencyGraph.roots, ['user/extensions']);
+        assert.deepStrictEqual(dependencyGraph.edges.get('user/extensions'), ['obra/superpowers-marketplace']);
+        assert.deepStrictEqual(
+            dependencyGraph.edges.get('obra/superpowers-marketplace'),
+            ['obra/superpowers', 'obra/superpowers-chrome'],
+        );
+        assert.strictEqual(dependencyGraph.edges.has('obra/superpowers'), false);
+        assert.strictEqual(dependencyGraph.edges.has('obra/superpowers-chrome'), false);
     });
 });
