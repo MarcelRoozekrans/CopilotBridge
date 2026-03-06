@@ -47,8 +47,24 @@ export class GitHubApiError extends Error {
     }
 }
 
+let cachedToken: string | undefined;
+let tokenPromise: Promise<string | undefined> | undefined;
+
+async function getCachedToken(): Promise<string | undefined> {
+    if (!tokenPromise) {
+        tokenPromise = getGitHubToken().then(t => { cachedToken = t; return t; });
+    }
+    return tokenPromise;
+}
+
+/** Reset cached token — called at start of each discovery run */
+export function resetTokenCache(): void {
+    cachedToken = undefined;
+    tokenPromise = undefined;
+}
+
 async function fetchJson(url: string): Promise<any> {
-    const token = await getGitHubToken();
+    const token = await getCachedToken();
     const headers = buildAuthHeaders(token);
     const response = await fetch(url, { headers });
     if (!response.ok) {
@@ -170,43 +186,48 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
             skillDirs = await fetchJson(url);
         } catch { continue; }
 
-        const skills: SkillInfo[] = [];
-        for (const dir of skillDirs) {
-            if (dir.type !== 'dir') { continue; }
+        const skillResults = await Promise.allSettled(
+            skillDirs
+                .filter(dir => dir.type === 'dir')
+                .map(async (dir) => {
+                    const dirPath = `${skillsPath}/${dir.name}`;
+                    // Fetch SKILL.md and directory listing in parallel
+                    const [skillContent, dirEntries] = await Promise.all([
+                        fetchFileContent(repo, `${dirPath}/SKILL.md`),
+                        fetchJson(buildGitHubApiUrl(repo, dirPath)).catch(() => [] as Array<{ name: string; type: string }>),
+                    ]);
 
-            try {
-                const skillContent = await fetchFileContent(repo, `${skillsPath}/${dir.name}/SKILL.md`);
-                const parsed = parseSkillFrontmatter(skillContent);
+                    const parsed = parseSkillFrontmatter(skillContent);
 
-                // Discover companion .md files in the skill directory
-                const companionFiles: CompanionFile[] = [];
-                try {
-                    const skillDirUrl = buildGitHubApiUrl(repo, `${skillsPath}/${dir.name}`);
-                    const skillDirEntries: Array<{ name: string; type: string }> = await fetchJson(skillDirUrl);
-                    for (const sdEntry of skillDirEntries) {
-                        if (sdEntry.type !== 'file') { continue; }
-                        if (sdEntry.name === 'SKILL.md') { continue; }
-                        if (!sdEntry.name.endsWith('.md')) { continue; }
-                        try {
-                            const companionContent = await fetchFileContent(repo, `${skillsPath}/${dir.name}/${sdEntry.name}`);
-                            companionFiles.push({ name: sdEntry.name, content: companionContent });
-                        } catch { /* skip individual companion failures */ }
-                    }
-                } catch { /* directory listing failed — skip companions */ }
+                    // Fetch companion .md files in parallel
+                    const companionEntries = (dirEntries as Array<{ name: string; type: string }>)
+                        .filter(e => e.type === 'file' && e.name !== 'SKILL.md' && e.name.endsWith('.md'));
 
-                skills.push(buildRemoteSkillInfo(
-                    parsed.name || dir.name,
-                    parsed.description,
-                    skillContent,
-                    entry.name,
-                    entry.version,
-                    repo,
-                    companionFiles.length > 0 ? companionFiles : undefined,
-                ));
-            } catch {
-                // SKILL.md doesn't exist
-            }
-        }
+                    const companionResults = await Promise.all(
+                        companionEntries.map(async (e) => {
+                            try {
+                                const content = await fetchFileContent(repo, `${dirPath}/${e.name}`);
+                                return { name: e.name, content } as CompanionFile;
+                            } catch { return null; }
+                        })
+                    );
+                    const companionFiles = companionResults.filter((c): c is CompanionFile => c !== null);
+
+                    return buildRemoteSkillInfo(
+                        parsed.name || dir.name,
+                        parsed.description,
+                        skillContent,
+                        entry.name,
+                        entry.version,
+                        repo,
+                        companionFiles.length > 0 ? companionFiles : undefined,
+                    );
+                })
+        );
+
+        const skills = skillResults
+            .filter((r): r is PromiseFulfilledResult<SkillInfo> => r.status === 'fulfilled')
+            .map(r => r.value);
 
         // Discover MCP servers from plugin.json (inline object or path) with .mcp.json fallback
         let mcpServers: McpServerInfo[] = [];

@@ -5,7 +5,7 @@ import { parseSkillFrontmatter } from './parser';
 import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported } from './stateManager';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles, writeCompanionFiles } from './fileWriter';
 import { discoverLocalPlugins } from './localReader';
-import { discoverRemotePlugins, GitHubApiError, RemoteDiscoveryResult } from './remoteReader';
+import { discoverRemotePlugins, GitHubApiError, RemoteDiscoveryResult, resetTokenCache } from './remoteReader';
 import { convertMcpServers } from './mcpConverter';
 import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
 import { analyzeCompatibility, extractSkillDependencies } from './compatAnalyzer';
@@ -30,6 +30,7 @@ export class ImportService {
         remoteRepos: string[],
         onProgress?: (plugins: PluginInfo[]) => void,
     ): Promise<DiscoveryResult> {
+        resetTokenCache();
         const localPlugins = await discoverLocalPlugins(cachePath);
         const remotePlugins: PluginInfo[] = [];
         const errors: DiscoveryError[] = [];
