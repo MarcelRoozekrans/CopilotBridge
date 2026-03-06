@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.20.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.19.2...copilot-skill-bridge-v0.20.0) (2026-03-06)
+
+
+### Features
+
+* add dependency visualization to TreeView ([992f4c9](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/992f4c95737c3557af6c169c5077960800cfbdd9))
+* add DependencyGraph type and record BFS edges ([86936f3](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/86936f34a40904cf34333d7d1789d87f14d0f450))
+* dependency visualization in TreeView sidebar ([765ca1a](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/765ca1a16e1290ab6519a68d25335616f1f42efc))
+* pass dependency graph through progressive loading callbacks ([926b12c](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/926b12cd3d5290aa395eb4ee322069e6dfcc594c))
+
+
+### Documentation
+
+* add dependency visualization design doc ([eada069](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/eada0699219c4997caa9a45a431629c078d2f144))
+* add dependency visualization implementation plan ([4fe8d87](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/4fe8d87d164622dbf782a3acc1c7dd1180d64be6))
+
 ## [0.19.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.19.1...copilot-skill-bridge-v0.19.2) (2026-03-06)
 
 
