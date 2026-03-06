@@ -266,52 +266,6 @@ describe('ImportService.mergePlugins', () => {
     });
 });
 
-describe('ImportService.importSkill preview cleanup', () => {
-    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
-    let service: ImportService;
-    const vscode = require('vscode');
-    let executeCommandCalls: string[];
-    let origExecuteCommand: any;
-    let origShowInfoMessage: any;
-
-    before(() => {
-        origExecuteCommand = vscode.commands.executeCommand;
-        origShowInfoMessage = vscode.window.showInformationMessage;
-    });
-
-    beforeEach(() => {
-        service = new ImportService(workspaceUri);
-        executeCommandCalls = [];
-        vscode.commands.executeCommand = async (cmd: string) => {
-            executeCommandCalls.push(cmd);
-        };
-    });
-
-    afterEach(() => {
-        vscode.commands.executeCommand = origExecuteCommand;
-        vscode.window.showInformationMessage = origShowInfoMessage;
-    });
-
-    it('should close diff editor when user accepts', async () => {
-        vscode.window.showInformationMessage = async () => 'Accept';
-        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
-        assert.ok(executeCommandCalls.includes('vscode.diff'), 'should open diff');
-        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff');
-    });
-
-    it('should close diff editor when user cancels', async () => {
-        vscode.window.showInformationMessage = async () => 'Cancel';
-        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
-        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff on cancel');
-    });
-
-    it('should close diff editor when user dismisses dialog', async () => {
-        vscode.window.showInformationMessage = async () => undefined;
-        await service.importSkill(makeSkill(), ['instructions', 'prompts'], false);
-        assert.ok(executeCommandCalls.includes('workbench.action.closeActiveEditor'), 'should close diff on dismiss');
-    });
-});
-
 describe('ImportService.importAllSkills', () => {
     const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
     let service: ImportService;

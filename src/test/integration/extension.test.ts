@@ -18,6 +18,7 @@ describe('Extension Lifecycle', () => {
         const commands = await vscode.commands.getCommands(true);
         const expected = [
             'copilotSkillBridge.importSkill',
+            'copilotSkillBridge.updateSkill',
             'copilotSkillBridge.importAllSkills',
             'copilotSkillBridge.checkForUpdates',
             'copilotSkillBridge.addMarketplace',

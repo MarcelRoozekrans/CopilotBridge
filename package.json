@@ -2,7 +2,7 @@
   "name": "copilot-skill-bridge",
   "displayName": "Copilot Skill Bridge",
   "description": "Bridge Claude Code marketplace skills into GitHub Copilot",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "publisher": "MarcelRoozekrans",
   "license": "MIT",
   "repository": {
@@ -139,18 +139,33 @@
         "command": "copilotSkillBridge.removeMarketplace",
         "title": "Remove Marketplace",
         "icon": "$(trash)"
+      },
+      {
+        "command": "copilotSkillBridge.updateSkill",
+        "title": "Update Skill",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
       "view/item/context": [
         {
           "command": "copilotSkillBridge.importSkill",
-          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(available|update-available)/",
+          "when": "view == skillBridgeExplorer && viewItem == skill-available",
           "group": "inline"
         },
         {
           "command": "copilotSkillBridge.importSkill",
-          "when": "view == skillBridgeExplorer && viewItem =~ /^skill-(available|update-available)/",
+          "when": "view == skillBridgeExplorer && viewItem == skill-available",
+          "group": "1_actions"
+        },
+        {
+          "command": "copilotSkillBridge.updateSkill",
+          "when": "view == skillBridgeExplorer && viewItem == skill-update-available",
+          "group": "inline"
+        },
+        {
+          "command": "copilotSkillBridge.updateSkill",
+          "when": "view == skillBridgeExplorer && viewItem == skill-update-available",
           "group": "1_actions"
         },
         {

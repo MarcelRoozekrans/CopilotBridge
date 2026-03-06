@@ -90,10 +90,17 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
 
     private plugins: PluginInfo[] = [];
     private manifest: BridgeManifest = { skills: {}, mcpServers: {}, marketplaces: [], settings: { checkInterval: 86400, autoAcceptUpdates: false } };
+    private _loading = false;
 
     setData(plugins: PluginInfo[], manifest: BridgeManifest) {
         this.plugins = plugins;
         this.manifest = manifest;
+        this._loading = false;
+        this._onDidChangeTreeData.fire();
+    }
+
+    setLoading() {
+        this._loading = true;
         this._onDidChangeTreeData.fire();
     }
 
@@ -107,6 +114,11 @@ export class SkillBridgeTreeProvider implements vscode.TreeDataProvider<SkillTre
 
     getChildren(element?: SkillTreeItem): SkillTreeItem[] {
         if (!element) {
+            if (this._loading && this.plugins.length === 0) {
+                const item = new vscode.TreeItem('Refreshing skills...', vscode.TreeItemCollapsibleState.None);
+                item.iconPath = new vscode.ThemeIcon('sync~spin');
+                return [item as unknown as SkillTreeItem];
+            }
             return this.getRootNodes();
         }
 
