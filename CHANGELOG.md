@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.20.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.0...copilot-skill-bridge-v0.20.1) (2026-03-06)
+
+
+### Bug Fixes
+
+* show redirect-only dependency repos in tree view ([f187afe](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/f187afe99258fb28a2575ef528f2130b660e0232))
+* show redirect-only dependency repos in tree view ([30ecccf](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/30ecccf15644106fd516621430022bb33de40273))
+* support snake_case mcp_servers in plugin.json ([37db823](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/37db823d2e7785fda46f8e62626be1ba2f7a216e))
+
 ## [0.20.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.19.2...copilot-skill-bridge-v0.20.0) (2026-03-06)
 
 
