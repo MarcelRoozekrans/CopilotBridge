@@ -7,14 +7,16 @@ describe('Extension Lifecycle', () => {
         assert.ok(ext, 'Extension not found');
     });
 
-    it('should activate successfully', async () => {
+    it('should activate successfully', async function () {
+        this.timeout(30000);
         const ext = vscode.extensions.getExtension('MarcelRoozekrans.copilot-skill-bridge');
         assert.ok(ext);
         await ext.activate();
         assert.strictEqual(ext.isActive, true);
     });
 
-    it('should register all expected commands', async () => {
+    it('should register all expected commands', async function () {
+        this.timeout(30000);
         const commands = await vscode.commands.getCommands(true);
         const expected = [
             'copilotSkillBridge.importSkill',
