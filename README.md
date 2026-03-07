@@ -20,6 +20,7 @@ Copilot Skill Bridge discovers skills from local Claude plugin caches and remote
 - **Update Watching** -- Periodically checks remote sources for new or updated skills and notifies you when changes are available.
 - **Marketplace Search** -- Search GitHub for Claude marketplace repositories with star counts, or type an `owner/repo` directly and press Enter to add it immediately.
 - **GitHub Authentication** -- Optionally sign in with GitHub via the VS Code authentication API to access private repositories and increase API rate limits.
+- **Install in Claude Code** -- Install remote marketplace plugins directly into Claude Code's plugin cache using existing GitHub authentication. Skills, companion files, and MCP server configurations are written to the configured cache path so Claude discovers them natively. Available as context menu actions on remote skills, plugins, and marketplaces.
 - **LM-Enhanced Conversion** -- Optionally use the Copilot Language Model API for deeper semantic conversion beyond regex rules.
 
 ## Getting Started
@@ -76,6 +77,9 @@ When only `prompts` is selected, the full converted skill content is embedded di
 | `copilotSkillBridge.importAllFromMarketplace` | Import All | Bulk import all compatible skills and MCP servers from a marketplace |
 | `copilotSkillBridge.removeAllFromMarketplace` | Remove All from Project | Remove all imported skills and MCP servers from a marketplace |
 | `copilotSkillBridge.removeMarketplace` | Remove Marketplace | Remove a marketplace and all its imported skills |
+| `copilotSkillBridge.installInClaude` | Install in Claude Code | Install a skill's plugin into Claude Code's plugin cache |
+| `copilotSkillBridge.installPluginInClaude` | Install in Claude Code | Install an entire plugin into Claude Code's plugin cache |
+| `copilotSkillBridge.installAllInClaude` | Install All in Claude Code | Install all plugins from a marketplace into Claude Code's plugin cache |
 
 ## How It Works
 
