@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.20.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.1...copilot-skill-bridge-v0.20.2) (2026-03-07)
+
+
+### Bug Fixes
+
+* deduplicate source redirect repos ([741e667](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/741e6677e085bcd2c2776692a24860b73d73be4b))
+* install all follows transitive deps for redirect-only repos ([b2781d1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/b2781d11f7fd690087b57b8a30d49d9c265a2e3f))
+* scope marketplace Install All to direct plugins + referenced deps ([9058938](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/905893826add9a162b5d45bdd0f0758db51044d3))
+* scoped dependency install and deduplication ([31386d0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/31386d050b1ab2a6a2dc59fd28dc4bae7e0b6a8e))
+
 ## [0.20.1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.0...copilot-skill-bridge-v0.20.1) (2026-03-06)
 
 
