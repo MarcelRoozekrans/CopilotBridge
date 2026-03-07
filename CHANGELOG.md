@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.4](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.3...copilot-skill-bridge-v0.20.4) (2026-03-07)
+
+
+### Bug Fixes
+
+* remove all cleans up transitive dependency skills ([2e7ad11](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/2e7ad1165d6b5052d6a00ec3d33004718722a9d1))
+* remove all cleans up transitive deps and non-blocking activation ([3c78527](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/3c7852769d071e3dea2cfdbbec701d73aac82332))
+
 ## [0.20.3](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.2...copilot-skill-bridge-v0.20.3) (2026-03-07)
 
 
