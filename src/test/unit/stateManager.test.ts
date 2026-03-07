@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { createEmptyManifest, computeHash, isSkillImported, isSkillOutdated, recordImport, removeSkillRecord, isMcpServerImported, recordMcpImport, removeMcpRecord, setSkillEmbedded, isSkillEmbedded } from '../../stateManager';
+import { createEmptyManifest, computeHash, isSkillImported, isSkillOutdated, recordImport, removeSkillRecord, isMcpServerImported, recordMcpImport, removeMcpRecord, setSkillEmbedded, isSkillEmbedded, recordMarketplace } from '../../stateManager';
 import { BridgeManifest } from '../../types';
 
 describe('createEmptyManifest', () => {
@@ -241,5 +241,39 @@ describe('recordImport preserves embedded', () => {
         const m = createEmptyManifest();
         const updated = recordImport(m, 'new-skill', 'src', 'hash');
         assert.strictEqual(updated.skills['new-skill'].embedded, false);
+    });
+});
+
+describe('recordMarketplace', () => {
+    it('should add a new marketplace entry', () => {
+        const m = createEmptyManifest();
+        const updated = recordMarketplace(m, 'owner/repo', 'sha123');
+        assert.strictEqual(updated.marketplaces.length, 1);
+        assert.strictEqual(updated.marketplaces[0].repo, 'owner/repo');
+        assert.strictEqual(updated.marketplaces[0].lastChecked, 'sha123');
+    });
+
+    it('should update existing marketplace entry', () => {
+        let m = createEmptyManifest();
+        m = recordMarketplace(m, 'owner/repo', 'sha1');
+        m = recordMarketplace(m, 'owner/repo', 'sha2');
+        assert.strictEqual(m.marketplaces.length, 1);
+        assert.strictEqual(m.marketplaces[0].lastChecked, 'sha2');
+    });
+
+    it('should not mutate original manifest', () => {
+        const m = createEmptyManifest();
+        const updated = recordMarketplace(m, 'owner/repo', 'sha1');
+        assert.strictEqual(m.marketplaces.length, 0);
+        assert.strictEqual(updated.marketplaces.length, 1);
+    });
+
+    it('should preserve other marketplace entries', () => {
+        let m = createEmptyManifest();
+        m = recordMarketplace(m, 'owner/repo-a', 'sha1');
+        m = recordMarketplace(m, 'owner/repo-b', 'sha2');
+        assert.strictEqual(m.marketplaces.length, 2);
+        assert.strictEqual(m.marketplaces[0].repo, 'owner/repo-a');
+        assert.strictEqual(m.marketplaces[1].repo, 'owner/repo-b');
     });
 });

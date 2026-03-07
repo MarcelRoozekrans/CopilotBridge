@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { SkillBridgeTreeProvider, SkillTreeItem } from './treeView';
 import { ImportService } from './importService';
 import { UpdateWatcher } from './updateWatcher';
-import { loadManifest } from './stateManager';
+import { loadManifest, saveManifest, updateMarketplaceLastChecked } from './stateManager';
 import { DiscoveryError } from './types';
 import { installPluginInClaudeCache, fetchPluginJson } from './claudeInstaller';
 
@@ -645,7 +645,16 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    updateWatcher.onRemoteChange(async ({ repo }) => {
+    updateWatcher.onRemoteChange(async ({ repo, newSha }) => {
+        // Update lastChecked SHA so we don't re-notify for the same commit
+        if (workspaceFolder) {
+            try {
+                let manifest = await loadManifest(workspaceFolder.uri);
+                manifest = updateMarketplaceLastChecked(manifest, repo, newSha);
+                await saveManifest(workspaceFolder.uri, manifest);
+            } catch { /* non-critical */ }
+        }
+
         const choice = await vscode.window.showInformationMessage(
             `Marketplace "${repo}" has updates. Refresh skills?`,
             'Review', 'Skip'

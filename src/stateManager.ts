@@ -117,3 +117,19 @@ export function removeMcpRecord(manifest: BridgeManifest, serverName: string): B
     const { [serverName]: _, ...remaining } = (manifest.mcpServers ?? {});
     return { ...manifest, mcpServers: remaining };
 }
+
+export function recordMarketplace(manifest: BridgeManifest, repo: string, lastChecked: string): BridgeManifest {
+    const existing = manifest.marketplaces.findIndex(m => m.repo === repo);
+    const entry = { repo, lastChecked };
+    const marketplaces = [...manifest.marketplaces];
+    if (existing >= 0) {
+        marketplaces[existing] = entry;
+    } else {
+        marketplaces.push(entry);
+    }
+    return { ...manifest, marketplaces };
+}
+
+export function updateMarketplaceLastChecked(manifest: BridgeManifest, repo: string, lastChecked: string): BridgeManifest {
+    return recordMarketplace(manifest, repo, lastChecked);
+}
