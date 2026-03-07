@@ -73,7 +73,7 @@ async function fetchJson(url: string): Promise<any> {
     return response.json();
 }
 
-async function fetchFileContent(repo: string, path: string): Promise<string> {
+export async function fetchFileContent(repo: string, path: string): Promise<string> {
     const url = buildGitHubApiUrl(repo, path);
     const data = await fetchJson(url);
     return parseGitHubContentsResponse(data);
