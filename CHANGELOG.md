@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.3](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.2...copilot-skill-bridge-v0.20.3) (2026-03-07)
+
+
+### Bug Fixes
+
+* preserve dep graph after mutations and faster import popup ([1ed4df4](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/1ed4df410eb2c789bd4c88e81e1787f50b858ab8))
+* preserve dep graph after mutations and faster skill import ([129de2c](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/129de2c86c7dd4d7a2728028fc73f4cff92ea4f7))
+
 ## [0.20.2](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.1...copilot-skill-bridge-v0.20.2) (2026-03-07)
 
 
