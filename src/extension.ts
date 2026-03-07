@@ -209,7 +209,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Full refresh: re-discover plugins from local cache and remote repos
     async function refreshAll() {
-        treeProvider.setLoading();
+        // Only show loading spinner if we already have data — don't hide welcome view
+        if (importService.getPlugins().length > 0) {
+            treeProvider.setLoading();
+        }
         const { cachePath, remoteRepos } = getConfig();
         let manifest = await loadManifest(workspaceUri);
 
@@ -258,7 +261,8 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    await refreshAll();
+    // Don't block activation — refresh remotes in background, tree updates progressively
+    refreshAll().catch(() => { /* errors handled inside refreshAll */ });
 
     // Register workspace-dependent commands
     context.subscriptions.push(
@@ -438,8 +442,8 @@ export async function activate(context: vscode.ExtensionContext) {
             );
             if (choice !== 'Remove') { return; }
 
-            // Remove all imported skills/MCP servers from this marketplace
-            const plugins = importService.getPluginsByMarketplace(repo);
+            // Remove all imported skills/MCP servers from this marketplace and its deps
+            const plugins = importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { generateRegistry, outputFormats } = getConfig();
@@ -495,10 +499,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
                 return;
             }
-            const directPlugins = importService.getPluginsByMarketplace(repo);
-            const plugins = directPlugins.length > 0
-                ? directPlugins
-                : importService.getPluginsByMarketplaceTransitive(repo);
+            // Always use transitive — remove should clean up all dep skills too
+            const plugins = importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { generateRegistry, outputFormats } = getConfig();
