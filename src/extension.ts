@@ -209,8 +209,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Full refresh: re-discover plugins from local cache and remote repos
     async function refreshAll() {
-        // Only show loading spinner if we already have data — don't hide welcome view
-        if (importService.getPlugins().length > 0) {
+        // Show loading spinner if we have data or configured marketplaces
+        if (importService.getPlugins().length > 0 || getConfig().remoteRepos.length > 0) {
             treeProvider.setLoading();
         }
         const { cachePath, remoteRepos } = getConfig();
@@ -262,7 +262,9 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // Don't block activation — refresh remotes in background, tree updates progressively
-    refreshAll().catch(() => { /* errors handled inside refreshAll */ });
+    refreshAll().catch(err => {
+        console.error('[CopilotSkillBridge] Initial refresh failed:', err);
+    });
 
     // Register workspace-dependent commands
     context.subscriptions.push(
