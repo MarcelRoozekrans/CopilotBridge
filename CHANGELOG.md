@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.5](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.4...copilot-skill-bridge-v0.20.5) (2026-03-07)
+
+
+### Bug Fixes
+
+* show loading spinner when marketplaces are configured ([218ad9d](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/218ad9d96373bd15ef32ab766a3a12b31ab52c08))
+* show loading spinner when marketplaces are configured ([8bcf78b](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/8bcf78bdf2e7e1386821b69665557183ff92e9ff))
+
 ## [0.20.4](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.3...copilot-skill-bridge-v0.20.4) (2026-03-07)
 
 
