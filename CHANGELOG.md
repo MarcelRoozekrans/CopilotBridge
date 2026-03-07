@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.21.0](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.5...copilot-skill-bridge-v0.21.0) (2026-03-07)
+
+
+### Features
+
+* add Claude Code plugin cache installer ([4965aa9](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/4965aa9cbfbdc6cd1b29379fb90637b0e083401a))
+* install plugins directly into Claude Code ([958352e](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/958352e1ebb591da5ecdf8d44f860e810b2a531c))
+* register Install in Claude Code commands and handlers ([30a7de1](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/30a7de14a47913cea66fd71f0c56b6e00dd7eba3))
+
+
+### Documentation
+
+* add install-in-claude feature to README ([593a8e6](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/commit/593a8e6d8fdb7cb283434a160871afe9df2dc19d))
+
 ## [0.20.5](https://github.com/MarcelRoozekrans/Copilot-Skill-Bridge/compare/copilot-skill-bridge-v0.20.4...copilot-skill-bridge-v0.20.5) (2026-03-07)
 
 
