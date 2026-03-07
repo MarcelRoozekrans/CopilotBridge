@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import { SkillInfo, PluginInfo, ConversionResult, McpServerInfo, BulkImportResult, DiscoveryResult, DiscoveryError, DependencyGraph } from './types';
 import { convertSkillContent, generateInstructionsFile, generatePromptFile, generateFullPromptFile, generateRegistryEntry, OutputFormat } from './converter';
 import { parseSkillFrontmatter } from './parser';
-import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported } from './stateManager';
+import { computeHash, loadManifest, saveManifest, recordImport, removeSkillRecord, recordMcpImport, removeMcpRecord, isMcpServerImported, setSkillEmbedded, isSkillImported, recordMarketplace } from './stateManager';
+import { fetchLatestCommitSha } from './remoteReader';
 import { writeInstructionsFile, writePromptFile, updateCopilotInstructions, removeSkillFiles, writeCompanionFiles } from './fileWriter';
 import { discoverLocalPlugins } from './localReader';
 import { discoverRemotePlugins, GitHubApiError, RemoteDiscoveryResult, resetTokenCache } from './remoteReader';
@@ -504,6 +505,14 @@ export class ImportService {
         if (isMetaOrchestratorSkill(skill)) {
             manifest = setSkillEmbedded(manifest, skill.name, true);
             await writeInstructionsFile(this.workspaceUri, skill.name, conversion.instructionsContent);
+        }
+
+        // Record marketplace for update tracking (if remote)
+        if (skill.marketplace && skill.source !== 'local') {
+            try {
+                const sha = await fetchLatestCommitSha(skill.marketplace);
+                manifest = recordMarketplace(manifest, skill.marketplace, sha);
+            } catch { /* non-critical — skip if fetch fails */ }
         }
 
         await saveManifest(this.workspaceUri, manifest);
