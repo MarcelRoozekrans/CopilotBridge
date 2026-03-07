@@ -574,6 +574,59 @@ describe('ImportService.getPluginsByMarketplace', () => {
     });
 });
 
+describe('ImportService.getPluginsByMarketplaceTransitive', () => {
+    const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
+    let service: ImportService;
+
+    beforeEach(() => {
+        service = new ImportService(workspaceUri);
+    });
+
+    it('should collect plugins from transitive dependency repos', () => {
+        const plugins: PluginInfo[] = [
+            { name: 'my-ext', description: '', version: '1', skills: [], marketplace: 'user/extensions', source: 'remote' },
+            { name: 'superpowers', description: '', version: '1', skills: [], marketplace: 'obra/superpowers', source: 'remote' },
+            { name: 'elements', description: '', version: '1', skills: [], marketplace: 'obra/elements', source: 'remote' },
+        ];
+        service.setPlugins(plugins);
+        service.setDepGraph({
+            edges: new Map([
+                ['user/extensions', ['obra/superpowers-marketplace']],
+                ['obra/superpowers-marketplace', ['obra/superpowers', 'obra/elements']],
+            ]),
+            roots: ['user/extensions'],
+        });
+
+        // From the redirect-only marketplace, should get all transitive plugins
+        const result = service.getPluginsByMarketplaceTransitive('obra/superpowers-marketplace');
+        assert.strictEqual(result.length, 2);
+        const names = result.map(p => p.name).sort();
+        assert.deepStrictEqual(names, ['elements', 'superpowers']);
+    });
+
+    it('should include direct plugins of the marketplace itself', () => {
+        const plugins: PluginInfo[] = [
+            { name: 'a', description: '', version: '1', skills: [], marketplace: 'user/repo', source: 'remote' },
+            { name: 'b', description: '', version: '1', skills: [], marketplace: 'dep/repo', source: 'remote' },
+        ];
+        service.setPlugins(plugins);
+        service.setDepGraph({
+            edges: new Map([['user/repo', ['dep/repo']]]),
+            roots: ['user/repo'],
+        });
+
+        const result = service.getPluginsByMarketplaceTransitive('user/repo');
+        assert.strictEqual(result.length, 2);
+    });
+
+    it('should return empty when no plugins match', () => {
+        service.setPlugins([]);
+        service.setDepGraph({ edges: new Map(), roots: [] });
+        const result = service.getPluginsByMarketplaceTransitive('nonexistent');
+        assert.strictEqual(result.length, 0);
+    });
+});
+
 describe('ImportService.resolveDependencies', () => {
     const workspaceUri = { fsPath: '/tmp/test-workspace', path: '/tmp/test-workspace' } as any;
     let service: ImportService;

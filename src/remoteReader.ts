@@ -117,7 +117,7 @@ export function normalizeMarketplaceJson(raw: MarketplaceJson): NormalizedMarket
         });
     }
 
-    return { plugins, sourceRedirectRepos };
+    return { plugins, sourceRedirectRepos: [...new Set(sourceRedirectRepos)] };
 }
 
 export function extractDependencies(raw: MarketplaceJson): string[] {

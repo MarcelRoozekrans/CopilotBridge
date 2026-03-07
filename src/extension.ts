@@ -470,7 +470,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
                 return;
             }
-            const plugins = importService.getPluginsByMarketplace(repo);
+            // Use direct plugins — importAllSkills auto-resolves referenced
+            // cross-plugin deps (e.g. superpowers:brainstorming).
+            // For redirect-only repos (0 direct plugins), fall back to transitive.
+            const directPlugins = importService.getPluginsByMarketplace(repo);
+            const plugins = directPlugins.length > 0
+                ? directPlugins
+                : importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { outputFormats, generateRegistry, useLmConversion } = getConfig();
@@ -489,7 +495,10 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
                 return;
             }
-            const plugins = importService.getPluginsByMarketplace(repo);
+            const directPlugins = importService.getPluginsByMarketplace(repo);
+            const plugins = directPlugins.length > 0
+                ? directPlugins
+                : importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { generateRegistry, outputFormats } = getConfig();
