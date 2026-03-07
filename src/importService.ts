@@ -616,12 +616,32 @@ export class ImportService {
         this.allPlugins = plugins;
     }
 
+    setDepGraph(depGraph: DependencyGraph) {
+        this._depGraph = depGraph;
+    }
+
     getPlugins(): PluginInfo[] {
         return this.allPlugins;
     }
 
     getPluginsByMarketplace(marketplace: string): PluginInfo[] {
         return this.allPlugins.filter(p => p.marketplace === marketplace);
+    }
+
+    /** Collect plugins from a marketplace and all its transitive dependency repos */
+    getPluginsByMarketplaceTransitive(marketplace: string): PluginInfo[] {
+        const repos = new Set<string>([marketplace]);
+        const queue = [marketplace];
+        while (queue.length > 0) {
+            const repo = queue.shift()!;
+            for (const dep of this._depGraph.edges.get(repo) ?? []) {
+                if (!repos.has(dep)) {
+                    repos.add(dep);
+                    queue.push(dep);
+                }
+            }
+        }
+        return this.allPlugins.filter(p => p.marketplace !== undefined && repos.has(p.marketplace));
     }
 
     async importMcpServer(server: McpServerInfo): Promise<void> {

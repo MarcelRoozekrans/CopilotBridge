@@ -470,7 +470,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
                 return;
             }
-            const plugins = importService.getPluginsByMarketplace(repo);
+            const plugins = importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { outputFormats, generateRegistry, useLmConversion } = getConfig();
@@ -489,7 +489,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 vscode.window.showWarningMessage('Select a marketplace from the Copilot Skill Bridge sidebar.');
                 return;
             }
-            const plugins = importService.getPluginsByMarketplace(repo);
+            const plugins = importService.getPluginsByMarketplaceTransitive(repo);
             const allSkills = plugins.flatMap(p => p.skills);
             const allMcpServers = plugins.flatMap(p => p.mcpServers ?? []);
             const { generateRegistry, outputFormats } = getConfig();
