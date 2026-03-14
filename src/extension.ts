@@ -5,6 +5,7 @@ import { UpdateWatcher } from './updateWatcher';
 import { loadManifest, saveManifest, updateMarketplaceLastChecked } from './stateManager';
 import { DiscoveryError } from './types';
 import { installPluginInClaudeCache, fetchPluginJson } from './claudeInstaller';
+import { initLogger } from './logger';
 
 let updateWatcher: UpdateWatcher | undefined;
 
@@ -20,6 +21,10 @@ class SkillContentProvider implements vscode.TextDocumentContentProvider {
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+    const outputChannel = vscode.window.createOutputChannel('Copilot Skill Bridge');
+    context.subscriptions.push(outputChannel);
+    initLogger(outputChannel);
+
     const noWorkspace = 'Open a folder to use Copilot Skill Bridge.';
 
     // Register virtual document provider for skill previews

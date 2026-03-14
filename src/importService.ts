@@ -11,16 +11,10 @@ import { convertMcpServers } from './mcpConverter';
 import { readMcpJson, writeMcpJson, mergeMcpConfigs, removeServerFromConfig } from './mcpWriter';
 import { analyzeCompatibility, extractSkillDependencies } from './compatAnalyzer';
 import { convertWithLM } from './lmConverter';
+import { getLogger } from './logger';
 
-let outputChannel: vscode.OutputChannel | undefined;
-function getOutputChannel(): vscode.OutputChannel {
-    if (!outputChannel) {
-        outputChannel = vscode.window.createOutputChannel('Copilot Skill Bridge');
-    }
-    return outputChannel;
-}
 function log(msg: string): void {
-    getOutputChannel().appendLine(`[${new Date().toISOString()}] ${msg}`);
+    getLogger().debug('importService', msg);
 }
 
 const META_ORCHESTRATOR_PATTERNS: RegExp[] = [
