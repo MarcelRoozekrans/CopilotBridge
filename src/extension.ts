@@ -273,7 +273,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Don't block activation — refresh remotes in background, tree updates progressively
     refreshAll().catch(err => {
-        console.error('[CopilotSkillBridge] Initial refresh failed:', err);
+        getLogger().error('extension.refreshAll: initial refresh failed', err);
     });
 
     // Register workspace-dependent commands
@@ -617,7 +617,7 @@ export async function activate(context: vscode.ExtensionContext) {
                         } catch (err) {
                             failed++;
                             const msg = err instanceof Error ? err.message : String(err);
-                            console.error(`[CopilotSkillBridge] Failed to install "${plugin.name}" in Claude Code: ${msg}`);
+                            getLogger().error(`extension.installAllInClaude: failed to install "${plugin.name}"`, err);
                         }
                     }
                 }

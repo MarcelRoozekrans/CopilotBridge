@@ -56,7 +56,7 @@ export async function readMcpJson(workspaceUri: vscode.Uri): Promise<McpJsonFile
         const raw = await vscode.workspace.fs.readFile(fileUri);
         return JSON.parse(Buffer.from(raw).toString('utf-8'));
     } catch (err) {
-        getLogger().warn('mcpWriter.readMcpJson: config read failure', err);
+        getLogger().debug('mcpWriter.readMcpJson: config not found, using empty', err);
         return { servers: {} };
     }
 }
