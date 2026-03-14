@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { SkillInfo, PluginInfo, PluginJson, McpServerInfo, ClaudeMcpServerConfig, CompanionFile } from './types';
 import { parseSkillFrontmatter } from './parser';
+import { getLogger } from './logger';
 
 export function resolveClaudeCachePath(configPath: string): string {
     if (configPath.startsWith('~')) {
@@ -47,7 +48,8 @@ export function parseMcpJson(
     try {
         const parsed = JSON.parse(raw);
         return mcpObjectToServers(parsed, pluginName, pluginVersion, marketplace);
-    } catch {
+    } catch (err) {
+        getLogger().debug('localReader.parseMcpJson: failed to parse MCP JSON', err);
         return [];
     }
 }
@@ -79,7 +81,8 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
     let marketplaceDirs: [string, vscode.FileType][];
     try {
         marketplaceDirs = await vscode.workspace.fs.readDirectory(cacheUri);
-    } catch {
+    } catch (err) {
+        getLogger().debug('localReader.discoverLocalPlugins: cache directory not readable', err);
         return plugins;
     }
 
@@ -90,7 +93,7 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
         let pluginDirs: [string, vscode.FileType][];
         try {
             pluginDirs = await vscode.workspace.fs.readDirectory(marketplaceUri);
-        } catch { continue; }
+        } catch (err) { getLogger().debug('localReader.discoverLocalPlugins: skipping marketplace dir', err); continue; }
 
         for (const [pluginDirName, pluginDirType] of pluginDirs) {
             if (pluginDirType !== vscode.FileType.Directory) { continue; }
@@ -99,7 +102,7 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
             let versionDirs: [string, vscode.FileType][];
             try {
                 versionDirs = await vscode.workspace.fs.readDirectory(pluginDirUri);
-            } catch { continue; }
+            } catch (err) { getLogger().debug('localReader.discoverLocalPlugins: skipping plugin dir', err); continue; }
 
             const versions = versionDirs
                 .filter(([, t]) => t === vscode.FileType.Directory)
@@ -116,7 +119,7 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
             try {
                 const raw = await vscode.workspace.fs.readFile(pluginJsonUri);
                 pluginMeta = parsePluginJson(Buffer.from(raw).toString('utf-8'));
-            } catch { continue; }
+            } catch (err) { getLogger().debug('localReader.discoverLocalPlugins: plugin.json read/parse failed', err); continue; }
 
             const skillsDir = vscode.Uri.joinPath(versionUri, pluginMeta.skills ?? 'skills');
             const skills = await discoverSkillsInDir(skillsDir, pluginMeta.name, latestVersion, marketplaceName);
@@ -142,8 +145,8 @@ export async function discoverLocalPlugins(cachePath: string): Promise<PluginInf
                             marketplaceName,
                         );
                         if (mcpServers.length > 0) { break; }
-                    } catch {
-                        // This path didn't work — try next
+                    } catch (err) {
+                        getLogger().debug('localReader.discoverLocalPlugins: mcp json read failed', err);
                     }
                 }
             }
@@ -175,7 +178,8 @@ async function discoverSkillsInDir(
     let entries: [string, vscode.FileType][];
     try {
         entries = await vscode.workspace.fs.readDirectory(skillsUri);
-    } catch {
+    } catch (err) {
+        getLogger().debug('localReader.discoverSkillsInDir: skills directory not readable', err);
         return skills;
     }
 
@@ -203,7 +207,7 @@ async function discoverSkillsInDir(
                         content: Buffer.from(fileRaw).toString('utf-8'),
                     });
                 }
-            } catch { /* directory read failed — skip companions */ }
+            } catch (err) { getLogger().debug('localReader.discoverSkillsInDir: companion files read failed', err); }
 
             skills.push(buildSkillInfo(
                 parsed.name || skillDirName,
@@ -215,8 +219,8 @@ async function discoverSkillsInDir(
                 skillMdUri.fsPath,
                 companionFiles,
             ));
-        } catch {
-            // SKILL.md doesn't exist in this dir, skip
+        } catch (err) {
+            getLogger().debug('localReader.discoverSkillsInDir: SKILL.md read/parse failed', err);
         }
     }
 
