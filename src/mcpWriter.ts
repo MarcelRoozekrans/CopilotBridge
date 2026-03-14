@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { VsCodeMcpConfig } from './mcpConverter';
+import { getLogger } from './logger';
 
 interface McpJsonFile {
     servers: Record<string, any>;
@@ -54,7 +55,8 @@ export async function readMcpJson(workspaceUri: vscode.Uri): Promise<McpJsonFile
     try {
         const raw = await vscode.workspace.fs.readFile(fileUri);
         return JSON.parse(Buffer.from(raw).toString('utf-8'));
-    } catch {
+    } catch (err) {
+        getLogger().warn('mcpWriter.readMcpJson: config read failure', err);
         return { servers: {} };
     }
 }

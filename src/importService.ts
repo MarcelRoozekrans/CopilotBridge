@@ -518,7 +518,7 @@ export class ImportService {
             try {
                 const sha = await fetchLatestCommitSha(skill.marketplace);
                 manifest = recordMarketplace(manifest, skill.marketplace, sha);
-            } catch { /* non-critical — skip if fetch fails */ }
+            } catch (err) { getLogger().debug('importService.writeSkillFiles: marketplace SHA fetch failed', err); }
         }
 
         await saveManifest(this.workspaceUri, manifest);
@@ -672,7 +672,7 @@ export class ImportService {
         const instructionsFile = vscode.Uri.joinPath(
             this.workspaceUri, '.github', 'instructions', `${skillName}.instructions.md`
         );
-        try { await vscode.workspace.fs.delete(instructionsFile); } catch { /* may not exist */ }
+        try { await vscode.workspace.fs.delete(instructionsFile); } catch (err) { getLogger().debug('importService.unembedSkill: instructions file not found', err); }
 
         manifest = setSkillEmbedded(manifest, skillName, false);
         await saveManifest(this.workspaceUri, manifest);

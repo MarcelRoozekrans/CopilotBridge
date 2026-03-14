@@ -1,5 +1,6 @@
 import { MarketplaceSearchResult } from './types';
 import { buildAuthHeaders, getGitHubToken } from './auth';
+import { getLogger } from './logger';
 
 const SEARCH_BASE = 'https://api.github.com/search/code';
 const FILE_SIGNATURE = 'filename:marketplace.json path:.claude-plugin';
@@ -58,8 +59,8 @@ async function fetchRepoStars(
                     description: data.description ?? '',
                 });
             }
-        } catch {
-            // Best-effort: keep code search defaults
+        } catch (err) {
+            getLogger().warn('marketplaceSearch.fetchRepoStars: search API failure', err);
         }
     });
     await Promise.all(fetches);

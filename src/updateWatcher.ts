@@ -3,6 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { BridgeManifest } from './types';
 import { fetchLatestCommitSha } from './remoteReader';
+import { getLogger } from './logger';
 
 export class UpdateWatcher implements vscode.Disposable {
     private localWatcher: vscode.FileSystemWatcher | undefined;
@@ -51,8 +52,8 @@ export class UpdateWatcher implements vscode.Disposable {
                     if (entry && entry.lastChecked !== latestSha) {
                         this._onRemoteChange.fire({ repo, newSha: latestSha });
                     }
-                } catch {
-                    // Silently skip failed checks
+                } catch (err) {
+                    getLogger().warn('updateWatcher.remoteChecker: poll failure', err);
                 }
             }
         };

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import { BridgeManifest, SkillImportState } from './types';
+import { getLogger } from './logger';
 
 const MANIFEST_FILENAME = '.copilot-skill-bridge.json';
 
@@ -35,7 +36,8 @@ export async function loadManifest(workspaceUri: vscode.Uri): Promise<BridgeMani
     try {
         const raw = await vscode.workspace.fs.readFile(manifestUri);
         return JSON.parse(Buffer.from(raw).toString('utf-8')) as BridgeManifest;
-    } catch {
+    } catch (err) {
+        getLogger().debug('stateManager.loadManifest: empty manifest fallback', err);
         return createEmptyManifest();
     }
 }

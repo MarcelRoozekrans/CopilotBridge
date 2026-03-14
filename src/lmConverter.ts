@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getLogger } from './logger';
 
 export const SYSTEM_PROMPT = `You are rewriting AI assistant instructions. The original was written for Claude Code.
 Rewrite it for GitHub Copilot in VS Code.
@@ -42,7 +43,8 @@ export async function convertWithLM(content: string): Promise<string> {
         if (models.length === 0) {
             models = await vscode.lm.selectChatModels({});
         }
-    } catch {
+    } catch (err) {
+        getLogger().debug('lmConverter.convertWithLM: model selection fallback', err);
         return content; // silent fallback
     }
 
@@ -65,7 +67,8 @@ export async function convertWithLM(content: string): Promise<string> {
         }
         const extracted = extractLmResponse(result);
         return extracted || content; // fall back if extraction is empty
-    } catch {
+    } catch (err) {
+        getLogger().debug('lmConverter.convertWithLM: LM request fallback', err);
         return content; // silent fallback on error
     }
 }

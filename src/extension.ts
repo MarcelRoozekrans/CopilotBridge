@@ -5,7 +5,7 @@ import { UpdateWatcher } from './updateWatcher';
 import { loadManifest, saveManifest, updateMarketplaceLastChecked } from './stateManager';
 import { DiscoveryError } from './types';
 import { installPluginInClaudeCache, fetchPluginJson } from './claudeInstaller';
-import { initLogger } from './logger';
+import { initLogger, getLogger } from './logger';
 
 let updateWatcher: UpdateWatcher | undefined;
 
@@ -84,7 +84,8 @@ export async function activate(context: vscode.ExtensionContext) {
             try {
                 const results = await searchMarketplaces();
                 quickPick.items = makeItems(results);
-            } catch {
+            } catch (err) {
+                getLogger().debug('extension.addMarketplace: initial search failed', err);
                 quickPick.items = [{ label: MANUAL_ENTRY_LABEL, description: '', detail: 'Search unavailable — enter manually', alwaysShow: true }];
             }
             quickPick.busy = false;
@@ -100,8 +101,8 @@ export async function activate(context: vscode.ExtensionContext) {
                     try {
                         const results = await searchMarketplaces(value || undefined);
                         quickPick.items = makeItems(results);
-                    } catch {
-                        // Keep existing items on error
+                    } catch (err) {
+                        getLogger().debug('extension.addMarketplace: search update failed', err);
                     }
                     quickPick.busy = false;
                 }, 400);
@@ -460,8 +461,8 @@ export async function activate(context: vscode.ExtensionContext) {
             const { generateRegistry, outputFormats } = getConfig();
             try {
                 await importService.removeAllSkills(allSkills, generateRegistry, allMcpServers, outputFormats as import('./types').OutputFormat[]);
-            } catch {
-                // Best effort — continue removing marketplace from settings
+            } catch (err) {
+                getLogger().debug('extension.removeMarketplace: best-effort skill removal', err);
             }
 
             // Remove from settings
@@ -657,7 +658,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 let manifest = await loadManifest(workspaceFolder.uri);
                 manifest = updateMarketplaceLastChecked(manifest, repo, newSha);
                 await saveManifest(workspaceFolder.uri, manifest);
-            } catch { /* non-critical */ }
+            } catch (err) { getLogger().debug('extension.onRemoteChange: manifest update failed', err); }
         }
 
         const choice = await vscode.window.showInformationMessage(

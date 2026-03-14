@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getLogger } from './logger';
 
 export function buildAuthHeaders(token: string | undefined): Record<string, string> {
     const headers: Record<string, string> = {
@@ -17,7 +18,8 @@ export async function getGitHubToken(): Promise<string | undefined> {
             createIfNone: false,
         });
         return session?.accessToken;
-    } catch {
+    } catch (err) {
+        getLogger().debug('auth.getGitHubToken: no session available', err);
         return undefined;
     }
 }
@@ -28,7 +30,8 @@ export async function loginToGitHub(): Promise<string | undefined> {
             createIfNone: true,
         });
         return session?.accessToken;
-    } catch {
+    } catch (err) {
+        getLogger().debug('auth.loginToGitHub: no session available', err);
         return undefined;
     }
 }
