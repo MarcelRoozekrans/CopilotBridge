@@ -256,4 +256,18 @@ describe('writeCompanionFiles', () => {
         assert.ok(convertCalled);
         assert.strictEqual(writtenFiles[0].content, 'Use the file reading.');
     });
+
+    it('should default to instructions directory', async () => {
+        const companions = [{ name: 'guide.md', content: 'content' }];
+        await writeCompanionFiles(workspaceUri, 'my-skill', companions, (c) => c);
+        assert.ok(writtenFiles[0].path.includes('instructions'));
+        assert.ok(!writtenFiles[0].path.includes('prompts'));
+    });
+
+    it('should write to prompts directory when targetDir is prompts', async () => {
+        const companions = [{ name: 'guide.md', content: 'content' }];
+        await writeCompanionFiles(workspaceUri, 'my-skill', companions, (c) => c, 'prompts');
+        assert.ok(writtenFiles[0].path.includes('prompts'));
+        assert.ok(!writtenFiles[0].path.includes('instructions'));
+    });
 });

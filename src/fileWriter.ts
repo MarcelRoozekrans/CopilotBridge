@@ -102,9 +102,11 @@ export async function writeCompanionFiles(
     workspaceUri: vscode.Uri,
     skillName: string,
     companionFiles: Array<{ name: string; content: string }>,
-    convertContent: (content: string) => string
+    convertContent: (content: string) => string,
+    targetDir?: 'instructions' | 'prompts'
 ): Promise<void> {
-    const dir = vscode.Uri.joinPath(workspaceUri, '.github', 'instructions');
+    const subdir = targetDir ?? 'instructions';
+    const dir = vscode.Uri.joinPath(workspaceUri, '.github', subdir);
     await vscode.workspace.fs.createDirectory(dir);
     for (const file of companionFiles) {
         const converted = convertContent(file.content);
@@ -121,14 +123,17 @@ export async function removeSkillFiles(workspaceUri: vscode.Uri, skillName: stri
     try { await vscode.workspace.fs.delete(instructionsFile); } catch { /* may not exist */ }
     try { await vscode.workspace.fs.delete(promptFile); } catch { /* may not exist */ }
 
-    // Remove companion files (prefixed with skillName-)
-    try {
-        const entries = await vscode.workspace.fs.readDirectory(instructionsDir);
-        for (const [fileName] of entries) {
-            if (fileName.startsWith(`${skillName}-`) && fileName.endsWith('.md')) {
-                const fileUri = vscode.Uri.joinPath(instructionsDir, fileName);
-                try { await vscode.workspace.fs.delete(fileUri); } catch { /* skip */ }
+    // Remove companion files (prefixed with skillName-) from both directories
+    const promptsDir = vscode.Uri.joinPath(workspaceUri, '.github', 'prompts');
+    for (const dir of [instructionsDir, promptsDir]) {
+        try {
+            const entries = await vscode.workspace.fs.readDirectory(dir);
+            for (const [fileName] of entries) {
+                if (fileName.startsWith(`${skillName}-`) && fileName.endsWith('.md')) {
+                    const fileUri = vscode.Uri.joinPath(dir, fileName);
+                    try { await vscode.workspace.fs.delete(fileUri); } catch { /* skip */ }
+                }
             }
-        }
-    } catch { /* instructions dir may not exist */ }
+        } catch { /* dir may not exist */ }
+    }
 }

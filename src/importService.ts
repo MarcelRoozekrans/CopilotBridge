@@ -491,11 +491,13 @@ export class ImportService {
         }
 
         if (skill.companionFiles?.length) {
+            const promptsOnly = outputFormats.includes('prompts') && !outputFormats.includes('instructions');
             await writeCompanionFiles(
                 this.workspaceUri,
                 skill.name,
                 skill.companionFiles,
-                (content) => convertSkillContent(content, outputFormats as OutputFormat[])
+                (content) => convertSkillContent(content, outputFormats as OutputFormat[]),
+                promptsOnly ? 'prompts' : 'instructions'
             );
         }
 
@@ -505,6 +507,16 @@ export class ImportService {
         if (isMetaOrchestratorSkill(skill)) {
             manifest = setSkillEmbedded(manifest, skill.name, true);
             await writeInstructionsFile(this.workspaceUri, skill.name, conversion.instructionsContent);
+            // Ensure companion files are co-located with the instructions file
+            if (skill.companionFiles?.length) {
+                await writeCompanionFiles(
+                    this.workspaceUri,
+                    skill.name,
+                    skill.companionFiles,
+                    (content) => convertSkillContent(content, outputFormats as OutputFormat[]),
+                    'instructions'
+                );
+            }
         }
 
         // Record marketplace for update tracking (if remote)
@@ -643,6 +655,15 @@ export class ImportService {
         if (skillInfo) {
             const conversion = await this.convertSkill(skillInfo);
             await writeInstructionsFile(this.workspaceUri, skillName, conversion.instructionsContent);
+            if (skillInfo.companionFiles?.length) {
+                await writeCompanionFiles(
+                    this.workspaceUri,
+                    skillName,
+                    skillInfo.companionFiles,
+                    (content) => convertSkillContent(content),
+                    'instructions'
+                );
+            }
         }
 
         manifest = setSkillEmbedded(manifest, skillName, true);

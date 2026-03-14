@@ -190,7 +190,7 @@ export async function activate(context: vscode.ExtensionContext) {
             checkInterval: config.get<number>('checkInterval', 86400),
             outputFormats: config.get<string[]>('outputFormats', ['prompts']),
             generateRegistry: config.get<boolean>('generateRegistry', true),
-            useLmConversion: config.get<boolean>('useLmConversion', true),
+            useLmConversion: config.get<boolean>('useLmConversion', false),
         };
     }
 
