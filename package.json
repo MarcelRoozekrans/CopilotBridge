@@ -352,7 +352,7 @@
         },
         "copilotSkillBridge.useLmConversion": {
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Use Copilot language model to enhance skill conversion (contextual rephrasing)"
         }
       }
