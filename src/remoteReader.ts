@@ -2,6 +2,7 @@ import { SkillInfo, PluginInfo, PluginJson, MarketplaceJson, McpServerInfo, Comp
 import { parseSkillFrontmatter } from './parser';
 import { buildAuthHeaders, getGitHubToken } from './auth';
 import { parseMcpJson, mcpObjectToServers } from './localReader';
+import { getLogger } from './logger';
 
 export function buildGitHubApiUrl(repo: string, path: string, ref?: string): string {
     const base = `https://api.github.com/repos/${repo}/contents/${path}`;
@@ -149,6 +150,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
         ];
     } catch (err) {
         if (err instanceof GitHubApiError && err.requiresAuth) { throw err; }
+        getLogger().warn(`discoverRemotePlugins: marketplace.json fetch failed for ${repo}`, err);
         try {
             const pluginContent = await fetchFileContent(repo, '.claude-plugin/plugin.json');
             const pluginMeta: PluginJson = JSON.parse(pluginContent);
@@ -162,6 +164,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
             }];
         } catch (err2) {
             if (err2 instanceof GitHubApiError && err2.requiresAuth) { throw err2; }
+            getLogger().debug(`discoverRemotePlugins: no plugin.json found for ${repo}`, err2);
             return { plugins, dependencies: [] };
         }
     }
@@ -176,7 +179,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                 const pj: PluginJson = JSON.parse(pjContent);
                 const mcpField = pj.mcpServers ?? pj.mcp_servers;
                 if (mcpField) { entry.mcpField = mcpField; }
-            } catch { /* no plugin.json — that's fine */ }
+            } catch (err) { getLogger().debug(`discoverRemotePlugins: no plugin.json at ${basePath} for ${repo}`, err); }
         }
 
         const skillsPath = basePath + 'skills';
@@ -185,7 +188,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
         try {
             const url = buildGitHubApiUrl(repo, skillsPath);
             skillDirs = await fetchJson(url);
-        } catch { continue; }
+        } catch (err) { getLogger().warn(`discoverRemotePlugins: failed to list skills directory for ${repo}/${skillsPath}`, err); continue; }
 
         const skillResults = await Promise.allSettled(
             skillDirs
@@ -195,7 +198,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                     // Fetch SKILL.md and directory listing in parallel
                     const [skillContent, dirEntries] = await Promise.all([
                         fetchFileContent(repo, `${dirPath}/SKILL.md`),
-                        fetchJson(buildGitHubApiUrl(repo, dirPath)).catch(() => [] as Array<{ name: string; type: string }>),
+                        fetchJson(buildGitHubApiUrl(repo, dirPath)).catch((err) => { getLogger().debug(`discoverRemotePlugins: failed to list skill dir entries for ${dirPath}`, err); return [] as Array<{ name: string; type: string }>; }),
                     ]);
 
                     const parsed = parseSkillFrontmatter(skillContent);
@@ -209,7 +212,7 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                             try {
                                 const content = await fetchFileContent(repo, `${dirPath}/${e.name}`);
                                 return { name: e.name, content } as CompanionFile;
-                            } catch { return null; }
+                            } catch (err) { getLogger().debug(`discoverRemotePlugins: companion file fetch failed for ${dirPath}/${e.name}`, err); return null; }
                         })
                     );
                     const companionFiles = companionResults.filter((c): c is CompanionFile => c !== null);
@@ -244,8 +247,8 @@ export async function discoverRemotePlugins(repo: string): Promise<RemoteDiscove
                     const mcpContent = await fetchFileContent(repo, mcpPath);
                     mcpServers = parseMcpJson(mcpContent, entry.name, entry.version, repo);
                     if (mcpServers.length > 0) { break; }
-                } catch {
-                    // This path didn't work — try next
+                } catch (err) {
+                    getLogger().debug(`discoverRemotePlugins: MCP config not found at ${mcpPath} for ${repo}`, err);
                 }
             }
         }
